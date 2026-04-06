@@ -1,0 +1,190 @@
+<!-- module_app/templates/module_app/employees/list.html -->
+{% extends 'module_app/base.html' %}
+{% load static %}
+
+{% block title %}Список сотрудников{% endblock %}
+
+{% block page_heading %}Сотрудники{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{% url 'module_app:employee_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Добавить сотрудника
+    </a>
+    <a href="{% url 'module_app:export_employees' %}" class="btn btn-success">
+        <i class="fas fa-file-excel"></i> Экспорт
+    </a>
+    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#importModal">
+        <i class="fas fa-file-import"></i> Импорт
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Фильтры поиска -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Фильтры поиска</h6>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Поиск по ФИО, должности, отделу..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-2">
+                <select name="department" class="form-select">
+                    <option value="">Все отделы</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept }}" {% if request.GET.department == dept %}selected{% endif %}>{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="is_active" class="form-select">
+                    <option value="">Все статусы</option>
+                    <option value="true" {% if request.GET.is_active == 'true' %}selected{% endif %}>Активные</option>
+                    <option value="false" {% if request.GET.is_active == 'false' %}selected{% endif %}>Уволенные</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="hire_date_from" class="form-control" placeholder="Дата приема с" value="{{ request.GET.hire_date_from }}">
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="hire_date_to" class="form-control" placeholder="Дата приема по" value="{{ request.GET.hire_date_to }}">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Поиск</button>
+                <a href="{% url 'module_app:employee_list' %}" class="btn btn-secondary">Сбросить</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Таблица сотрудников -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Список сотрудников</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="employeesTable">
+                <thead>
+                    <tr>
+                        <th>Табельный номер</th>
+                        <th>ФИО</th>
+                        <th>Должность</th>
+                        <th>Отдел</th>
+                        <th>Телефон</th>
+                        <th>Дата приема</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for employee in employees %}
+                    <tr>
+                        <td><code>{{ employee.employee_code|default:"—" }}</code></td>
+                        <td>
+                            <a href="{% url 'module_app:employee_detail' employee.id %}">
+                                {{ employee.full_name }}
+                            </a>
+                        </td>
+                        <td>{{ employee.position|default:"—" }}</td>
+                        <td>{{ employee.department|default:"—" }}</td>
+                        <td>{{ employee.phone|default:"—" }}</td>
+                        <td>{{ employee.hire_date|date:"d.m.Y"|default:"—" }}</td>
+                        <td>
+                            {% if employee.is_active %}
+                            <span class="badge bg-success">Активен</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Уволен</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'module_app:employee_detail' employee.id %}" class="btn btn-sm btn-info" title="Просмотр">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'module_app:employee_update' employee.id %}" class="btn btn-sm btn-warning" title="Редактировать">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'module_app:employee_documents' employee.id %}" class="btn btn-sm btn-secondary" title="Документы">
+                                    <i class="fas fa-file-alt"></i>
+                                </a>
+                                {% if employee.is_active %}
+                                <a href="{% url 'module_app:employee_delete' employee.id %}" class="btn btn-sm btn-danger" title="Уволить">
+                                    <i class="fas fa-user-minus"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fas fa-users fa-3x mb-3 d-block"></i>
+                            Нет данных о сотрудниках
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Пагинация -->
+        {% include 'module_app/includes/pagination.html' with page_obj=employees %}
+    </div>
+</div>
+
+<!-- Модальное окно импорта -->
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Импорт сотрудников из Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{% url 'module_app:import_employees' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Выберите файл Excel</label>
+                        <input type="file" class="form-control" name="file" accept=".xlsx,.xls" required>
+                        <div class="form-text">
+                            <a href="{% static 'module_app/templates/employees_import_template.xlsx' %}">
+                                Скачать шаблон
+                            </a>
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" name="update_existing" id="updateExisting">
+                        <label class="form-check-label" for="updateExisting">Обновлять существующих сотрудников</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Импортировать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#employeesTable').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json'
+            },
+            pageLength: 25,
+            ordering: true,
+            order: [[5, 'desc']],
+            columnDefs: [
+                { orderable: false, targets: [7] }
+            ]
+        });
+    });
+</script>
+{% endblock %}

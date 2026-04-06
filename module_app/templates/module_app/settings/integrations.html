@@ -1,0 +1,188 @@
+<!-- module_app/templates/module_app/settings/integrations.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Настройки интеграций{% endblock %}
+
+{% block page_heading %}Интеграции с внешними системами{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:settings' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <!-- 1С Интеграция -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Интеграция с 1С:Бухгалтерия</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="integration_type" value="accounting">
+
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" name="accounting_enabled" class="form-check-input" id="accountingEnabled" {% if settings.accounting_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="accountingEnabled">Включить интеграцию с 1С</label>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">API URL</label>
+                            <input type="url" name="accounting_api_url" class="form-control" value="{{ settings.accounting_api_url }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Таймаут (сек)</label>
+                            <input type="number" name="accounting_timeout" class="form-control" value="{{ settings.accounting_timeout|default:30 }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">API Ключ</label>
+                        <input type="password" name="accounting_api_key" class="form-control" value="{{ settings.accounting_api_key }}" placeholder="••••••••">
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-info" onclick="testConnection('accounting')">
+                        <i class="fas fa-plug"></i> Проверить подключение
+                    </button>
+
+                    <hr>
+                    <button type="submit" class="btn btn-primary">Сохранить настройки 1С</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ПФР Интеграция -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Интеграция с ПФР (СФР)</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="integration_type" value="pfr">
+
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" name="pfr_enabled" class="form-check-input" id="pfrEnabled" {% if settings.pfr_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="pfrEnabled">Включить интеграцию с ПФР</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">API URL</label>
+                        <input type="url" name="pfr_api_url" class="form-control" value="{{ settings.pfr_api_url }}">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Логин</label>
+                            <input type="text" name="pfr_login" class="form-control" value="{{ settings.pfr_login }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Пароль</label>
+                            <input type="password" name="pfr_password" class="form-control" placeholder="••••••••">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Сохранить настройки ПФР</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ФНС Интеграция -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Интеграция с ФНС</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="integration_type" value="fns">
+
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" name="fns_enabled" class="form-check-input" id="fnsEnabled" {% if settings.fns_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="fnsEnabled">Включить интеграцию с ФНС</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">API URL</label>
+                        <input type="url" name="fns_api_url" class="form-control" value="{{ settings.fns_api_url }}">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">ИНН организации</label>
+                            <input type="text" name="fns_inn" class="form-control" value="{{ settings.fns_inn }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">КПП</label>
+                            <input type="text" name="fns_kpp" class="form-control" value="{{ settings.fns_kpp }}">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Сохранить настройки ФНС</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ФСС Интеграция -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Интеграция с ФСС (СФР)</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="integration_type" value="fss">
+
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" name="fss_enabled" class="form-check-input" id="fssEnabled" {% if settings.fss_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="fssEnabled">Включить интеграцию с ФСС</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">API URL</label>
+                        <input type="url" name="fss_api_url" class="form-control" value="{{ settings.fss_api_url }}">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Регистрационный номер</label>
+                            <input type="text" name="fss_reg_number" class="form-control" value="{{ settings.fss_reg_number }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Код подчиненности</label>
+                            <input type="text" name="fss_sub_code" class="form-control" value="{{ settings.fss_sub_code }}">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Сохранить настройки ФСС</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function testConnection(type) {
+    fetch('/settings/integrations/test/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({type: type})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✓ Подключение к ' + type + ' успешно!');
+        } else {
+            alert('✗ Ошибка подключения: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}

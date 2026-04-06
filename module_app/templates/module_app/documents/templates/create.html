@@ -1,0 +1,81 @@
+<!-- module_app/templates/module_app/documents/templates/create.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Создание шаблона{% endblock %}
+
+{% block page_heading %}Создание нового шаблона документа{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:document_template_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Параметры шаблона</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Название шаблона *</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Тип шаблона *</label>
+                            <select name="template_type" class="form-select" required>
+                                <option value="">Выберите тип...</option>
+                                <option value="employment_order">Приказ о приеме</option>
+                                <option value="dismissal_order">Приказ об увольнении</option>
+                                <option value="vacation_order">Приказ о отпуске</option>
+                                <option value="transfer_order">Приказ о переводе</option>
+                                <option value="employment_contract">Трудовой договор</option>
+                                <option value="vacation_notice">Уведомление об отпуске</option>
+                                <option value="warning_notice">Предупреждение</option>
+                                <option value="certificate">Справка</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Содержание шаблона *</label>
+                        <textarea name="content" class="form-control font-monospace" rows="15"
+                                  placeholder="Используйте переменные в формате {{ variable }}"></textarea>
+                        <div class="form-text">
+                            Доступные переменные: {{ full_name }}, {{ position }}, {{ department }},
+                            {{ hire_date }}, {{ salary }}, {{ employee_code }}, {{ director_name }},
+                            {{ current_date }}, {{ order_number }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Переменные (JSON)</label>
+                        <textarea name="variables" class="form-control font-monospace" rows="5"
+                                  placeholder='{"full_name": "ФИО сотрудника", "position": "Должность"}'></textarea>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="is_active" class="form-check-input" id="isActive" checked>
+                        <label class="form-check-label" for="isActive">Шаблон активен</label>
+                    </div>
+
+                    <hr>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить шаблон
+                        </button>
+                        <a href="{% url 'module_app:document_template_list' %}" class="btn btn-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,153 @@
+<!-- module_app/templates/module_app/reports/government.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Отчет для госорганов{% endblock %}
+
+{% block page_heading %}Отчетность для государственных органов{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:reports' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Параметры отчета</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'module_app:generate_government_report' %}">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Тип отчета</label>
+                        <select name="report_type" class="form-select" required>
+                            <option value="">Выберите тип...</option>
+                            <option value="pension_fund">ПФР (СЗВ-М, СЗВ-СТАЖ)</option>
+                            <option value="tax_service">ФНС (2-НДФЛ, 6-НДФЛ)</option>
+                            <option value="social_fund">ФСС (4-ФСС)</option>
+                            <option value="statistics">Росстат</option>
+                            <option value="employment_center">ЦЗН</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Период</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <select name="month" class="form-select">
+                                    <option value="">Месяц</option>
+                                    {% for m in months %}
+                                    <option value="{{ m.num }}">{{ m.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <select name="year" class="form-select">
+                                    {% for y in years %}
+                                    <option value="{{ y }}">{{ y }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Формат</label>
+                        <select name="format" class="form-select">
+                            <option value="xml">XML</option>
+                            <option value="json">JSON</option>
+                            <option value="excel">Excel</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-file-alt"></i> Сформировать отчет
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Сформированные отчеты</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Тип отчета</th>
+                                <th>Период</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td>{{ report.generated_at|date:"d.m.Y H:i" }}</td>
+                                <td>{{ report.get_report_type_display }}</td>
+                                <td>{{ report.report_period }}</td>
+                                <td>
+                                    {% if report.status == 'generated' %}
+                                    <span class="badge bg-info">Сформирован</span>
+                                    {% elif report.status == 'sent' %}
+                                    <span class="badge bg-success">Отправлен</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ report.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ report.report_file.url }}" class="btn btn-sm btn-success" target="_blank">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        {% if report.status == 'generated' %}
+                                        <a href="{% url 'module_app:send_government_report' report.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    <i class="fas fa-file-alt fa-3x mb-3 d-block"></i>
+                                    Нет сформированных отчетов
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о сдаче отчетности</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Сроки сдачи отчетности:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>ПФР (СЗВ-М):</strong> до 15 числа месяца, следующего за отчетным</li>
+                        <li><strong>ПФР (СЗВ-СТАЖ):</strong> до 1 марта следующего года</li>
+                        <li><strong>ФНС (2-НДФЛ):</strong> до 1 апреля следующего года</li>
+                        <li><strong>ФНС (6-НДФЛ):</strong> до 25 числа месяца, следующего за отчетным</li>
+                        <li><strong>ФСС (4-ФСС):</strong> до 25 числа месяца, следующего за отчетным</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

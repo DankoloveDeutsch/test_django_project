@@ -1,0 +1,221 @@
+<!-- module_app/templates/module_app/employees/documents.html -->
+{% extends 'module_app/base.html' %}
+{% load static %}
+
+{% block title %}Документы: {{ employee.full_name }}{% endblock %}
+
+{% block page_heading %}Документы сотрудника{% endblock %}
+
+{% block page_actions %}
+<div>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+        <i class="fas fa-upload"></i> Загрузить документ
+    </button>
+    <a href="{% url 'module_app:employee_detail' employee.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о сотруднике</h6>
+            </div>
+            <div class="card-body text-center">
+                {% if employee.profile_picture %}
+                <img src="{{ employee.profile_picture.url }}" class="img-fluid rounded-circle mb-3" style="max-width: 120px;">
+                {% endif %}
+                <h5>{{ employee.full_name }}</h5>
+                <p class="text-muted">{{ employee.position }}</p>
+                <hr>
+                <div class="text-start">
+                    <p><i class="fas fa-id-badge me-2"></i> {{ employee.employee_code }}</p>
+                    <p><i class="fas fa-building me-2"></i> {{ employee.department }}</p>
+                    <p><i class="fas fa-calendar me-2"></i> С {{ employee.hire_date|date:"d.m.Y" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Статистика</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="h2 text-primary">{{ total_documents }}</div>
+                    <div class="text-muted">Всего документов</div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h5 text-warning">{{ expiring_soon }}</div>
+                        <small class="text-muted">Истекают скоро</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 text-danger">{{ expired }}</div>
+                        <small class="text-muted">Просрочены</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#all">Все документы</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#expiring">Истекающие</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#expired">Просроченные</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="all">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Тип</th>
+                                        <th>Название</th>
+                                        <th>Дата загрузки</th>
+                                        <th>Срок действия</th>
+                                        <th>Статус</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for doc in documents %}
+                                    <tr>
+                                        <td><span class="badge bg-secondary">{{ doc.get_document_type_display }}</span></td>
+                                        <td>{{ doc.title }}</td>
+                                        <td>{{ doc.upload_date|date:"d.m.Y" }}</td>
+                                        <td>{% if doc.expiry_date %}{{ doc.expiry_date|date:"d.m.Y" }}{% else %}—{% endif %}</td>
+                                        <td>
+                                            {% if doc.is_expired %}
+                                            <span class="badge bg-danger">Просрочен</span>
+                                            {% elif doc.days_until_expiry and doc.days_until_expiry <= 30 %}
+                                            <span class="badge bg-warning">Истекает через {{ doc.days_until_expiry }} дн.</span>
+                                            {% else %}
+                                            <span class="badge bg-success">Активен</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-info" target="_blank">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-danger" onclick="deleteDocument({{ doc.id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="fas fa-folder-open fa-3x mb-3 d-block"></i>
+                                            Нет загруженных документов
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="expiring">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <!-- Аналогичная таблица для истекающих документов -->
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="expired">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <!-- Аналогичная таблица для просроченных документов -->
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно загрузки документа -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Загрузка документа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{% url 'module_app:employee_document_upload' %}">
+                {% csrf_token %}
+                <input type="hidden" name="employee" value="{{ employee.id }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Тип документа</label>
+                        <select name="document_type" class="form-select" required>
+                            <option value="">Выберите тип...</option>
+                            <option value="passport">Паспорт</option>
+                            <option value="snils">СНИЛС</option>
+                            <option value="inn">ИНН</option>
+                            <option value="employment_history">Трудовая книжка</option>
+                            <option value="education">Диплом</option>
+                            <option value="medical">Медицинская книжка</option>
+                            <option value="certificate">Сертификат</option>
+                            <option value="other">Другое</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Название документа</label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Файл</label>
+                        <input type="file" name="file" class="form-control" required accept=".pdf,.doc,.docx,.jpg,.png">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Срок действия</label>
+                        <input type="date" name="expiry_date" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Загрузить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteDocument(docId) {
+    if (confirm('Вы уверены, что хотите удалить этот документ?')) {
+        fetch(`/employee-documents/${docId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        }).then(() => location.reload());
+    }
+}
+</script>
+{% endblock %}

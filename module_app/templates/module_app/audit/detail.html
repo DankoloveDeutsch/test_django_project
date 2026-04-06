@@ -1,0 +1,90 @@
+<!-- module_app/templates/module_app/audit/detail.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Детали аудита{% endblock %}
+
+{% block page_heading %}Детали записи аудита{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:audit_log' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о событии</h6>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="text-muted">Дата и время</label>
+                        <p>{{ log.created_at|date:"d.m.Y H:i:s" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Пользователь</label>
+                        <p>{{ log.user.get_full_name|default:log.user.username|default:"Система" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">IP адрес</label>
+                        <p><code>{{ log.ip_address|default:"Не определен" }}</code></p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Действие</label>
+                        <p>
+                            {% if log.action == 'create' %}
+                            <span class="badge bg-success">Создание</span>
+                            {% elif log.action == 'update' %}
+                            <span class="badge bg-warning">Обновление</span>
+                            {% elif log.action == 'delete' %}
+                            <span class="badge bg-danger">Удаление</span>
+                            {% else %}
+                            <span class="badge bg-primary">{{ log.action }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Модель</label>
+                        <p>{{ log.model_name }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">ID объекта</label>
+                        <p><code>{{ log.object_id|default:"—" }}</code></p>
+                    </div>
+                    <div class="col-12">
+                        <label class="text-muted">Объект</label>
+                        <p class="border p-2 bg-light">{{ log.object_repr|default:"—" }}</p>
+                    </div>
+                </div>
+
+                {% if log.changes %}
+                <hr>
+                <h6 class="font-weight-bold">Изменения</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Поле</th>
+                                <th>Было</th>
+                                <th>Стало</th>
+                            </thead>
+                        <tbody>
+                            {% for field, values in log.changes.items %}
+                            <tr>
+                                <td><strong>{{ field }}</strong></td>
+                                <td class="text-muted">{{ values.old|default:"—" }}</td>
+                                <td class="text-primary">{{ values.new|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+<!-- module_app/templates/module_app/auth/profile.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Мой профиль{% endblock %}
+
+{% block page_heading %}Мой профиль{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{% url 'module_app:edit_profile' %}" class="btn btn-warning">
+        <i class="fas fa-edit"></i> Редактировать
+    </a>
+    <a href="{% url 'module_app:change_password' %}" class="btn btn-info">
+        <i class="fas fa-key"></i> Сменить пароль
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-body text-center">
+                {% if profile.profile_picture %}
+                <img src="{{ profile.profile_picture.url }}" class="img-fluid rounded-circle mb-3" style="max-width: 150px;">
+                {% else %}
+                <img src="{% static 'module_app/images/default_avatar.jpg' %}" class="img-fluid rounded-circle mb-3" style="max-width: 150px;">
+                {% endif %}
+                <h4>{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted">{{ profile.position|default:"Сотрудник" }}</p>
+                <p class="text-muted">{{ profile.department|default:"Без отдела" }}</p>
+                <hr>
+                <div>
+                    <span class="badge bg-primary">{{ profile.get_employment_type_display }}</span>
+                    {% if profile.is_active %}
+                    <span class="badge bg-success">Активен</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Уволен</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Статистика</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="h3 text-primary">{{ profile.total_hours|floatformat:0 }}</div>
+                        <small>Всего часов</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h3 text-success">{{ profile.personal_documents.count }}</div>
+                        <small>Документов</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h3 text-warning">{{ profile.reminders.count }}</div>
+                        <small>Напоминаний</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h3 text-info">{{ profile.attendance_logs.count }}</div>
+                        <small>Дней работы</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Личная информация</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Имя пользователя</label>
+                        <p>{{ user.username }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Email</label>
+                        <p>{{ user.email }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Телефон</label>
+                        <p>{{ profile.phone|default:"Не указан" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Дата рождения</label>
+                        <p>{{ profile.birth_date|date:"d.m.Y"|default:"Не указана" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Дата приема</label>
+                        <p>{{ profile.hire_date|date:"d.m.Y"|default:"Не указана" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted">Оклад</label>
+                        <p>{{ profile.salary|default:"—" }} ₽</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="text-muted">Адрес</label>
+                        <p>{{ profile.address|default:"Не указан" }}</p>
+                    </div>
+                    {% if profile.tax_id or profile.snils %}
+                    <div class="col-12">
+                        <hr>
+                        <h6 class="mt-2">Документы</h6>
+                        <div class="row mt-2">
+                            {% if profile.tax_id %}
+                            <div class="col-md-6">
+                                <label class="text-muted">ИНН</label>
+                                <p>{{ profile.tax_id }}</p>
+                            </div>
+                            {% endif %}
+                            {% if profile.snils %}
+                            <div class="col-md-6">
+                                <label class="text-muted">СНИЛС</label>
+                                <p>{{ profile.snils }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

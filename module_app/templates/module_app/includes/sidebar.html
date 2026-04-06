@@ -1,0 +1,132 @@
+<!-- module_app/templates/module_app/includes/sidebar.html -->
+<nav class="sidebar">
+    <div class="sidebar-header">
+        <h3>HR System</h3>
+    </div>
+
+    <ul class="sidebar-nav">
+        <li class="nav-item">
+            <a href="{% url 'module_app:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Дашборд</span>
+            </a>
+        </li>
+
+        <li class="nav-divider">Управление персоналом</li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:employee_list' %}" class="nav-link {% if 'employee' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="fas fa-users"></i>
+                <span>Сотрудники</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:schedule_list' %}" class="nav-link">
+                <i class="fas fa-calendar-alt"></i>
+                <span>График работы</span>
+            </a>
+        </li>
+
+        <li class="nav-divider">Учет времени</li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:attendance_list' %}" class="nav-link">
+                <i class="fas fa-clock"></i>
+                <span>Табель учета</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:attendance_log' %}" class="nav-link">
+                <i class="fas fa-fingerprint"></i>
+                <span>Отметка времени</span>
+            </a>
+        </li>
+
+        <li class="nav-divider">Документы</li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:document_list' %}" class="nav-link">
+                <i class="fas fa-file-alt"></i>
+                <span>Документы</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:document_generate' %}" class="nav-link">
+                <i class="fas fa-file-export"></i>
+                <span>Генерация документов</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:document_template_list' %}" class="nav-link">
+                <i class="fas fa-copy"></i>
+                <span>Шаблоны</span>
+            </a>
+        </li>
+
+        <li class="nav-divider">Отчеты</li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:reports' %}" class="nav-link">
+                <i class="fas fa-chart-bar"></i>
+                <span>Отчеты</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:government_report_list' %}" class="nav-link">
+                <i class="fas fa-building"></i>
+                <span>Гос. отчетность</span>
+            </a>
+        </li>
+
+        <li class="nav-divider">Система</li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:reminder_list' %}" class="nav-link">
+                <i class="fas fa-bell"></i>
+                <span>Напоминания</span>
+                {% if notifications_count > 0 %}
+                <span class="badge bg-danger ms-2">{{ notifications_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:accounting_list' %}" class="nav-link">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Интеграция с 1С</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:audit_log' %}" class="nav-link">
+                <i class="fas fa-history"></i>
+                <span>Журнал аудита</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a href="{% url 'module_app:settings' %}" class="nav-link">
+                <i class="fas fa-cog"></i>
+                <span>Настройки</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <img src="{% if request.user.employeeprofile.profile_picture %}{{ request.user.employeeprofile.profile_picture.url }}{% else %}{% static 'module_app/images/default_avatar.jpg' %}{% endif %}" class="user-avatar">
+            <div class="user-details">
+                <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                <small>{{ request.user.employeeprofile.position|default:"Сотрудник" }}</small>
+            </div>
+        </div>
+        <a href="{% url 'module_app:logout' %}" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Выход
+        </a>
+    </div>
+</nav>

@@ -1,0 +1,169 @@
+<!-- module_app/templates/module_app/settings/notifications.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Настройки уведомлений{% endblock %}
+
+{% block page_heading %}Настройки уведомлений{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:settings' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Каналы уведомлений</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!-- Email уведомления -->
+                    <div class="mb-4">
+                        <h6 class="font-weight-bold">Email уведомления</h6>
+                        <div class="form-check form-switch mb-2">
+                            <input type="checkbox" name="email_enabled" class="form-check-input" id="emailEnabled" {% if settings.email_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="emailEnabled">Включить email уведомления</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">SMTP сервер</label>
+                            <input type="text" name="smtp_host" class="form-control" value="{{ settings.smtp_host }}">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">SMTP порт</label>
+                                <input type="number" name="smtp_port" class="form-control" value="{{ settings.smtp_port|default:587 }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Использовать TLS</label>
+                                <select name="smtp_use_tls" class="form-select">
+                                    <option value="True" {% if settings.smtp_use_tls %}selected{% endif %}>Да</option>
+                                    <option value="False" {% if not settings.smtp_use_tls %}selected{% endif %}>Нет</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Email отправителя</label>
+                                <input type="email" name="from_email" class="form-control" value="{{ settings.from_email }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Пароль приложения</label>
+                                <input type="password" name="email_password" class="form-control" placeholder="••••••••">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Telegram уведомления -->
+                    <div class="mb-4">
+                        <h6 class="font-weight-bold">Telegram уведомления</h6>
+                        <div class="form-check form-switch mb-2">
+                            <input type="checkbox" name="telegram_enabled" class="form-check-input" id="telegramEnabled" {% if settings.telegram_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="telegramEnabled">Включить Telegram уведомления</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Токен бота</label>
+                            <input type="text" name="telegram_token" class="form-control" value="{{ settings.telegram_token }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">ID чата администратора</label>
+                            <input type="text" name="telegram_admin_chat" class="form-control" value="{{ settings.telegram_admin_chat }}">
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-info" onclick="testTelegram()">
+                            <i class="fab fa-telegram"></i> Проверить подключение
+                        </button>
+                    </div>
+
+                    <hr>
+
+                    <!-- Какие уведомления отправлять -->
+                    <div class="mb-4">
+                        <h6 class="font-weight-bold">Какие уведомления отправлять</h6>
+
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="notify_medical" class="form-check-input" id="notifyMedical" {% if settings.notify_medical %}checked{% endif %}>
+                            <label class="form-check-label" for="notifyMedical">Медосмотры</label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="notify_certification" class="form-check-input" id="notifyCertification" {% if settings.notify_certification %}checked{% endif %}>
+                            <label class="form-check-label" for="notifyCertification">Аттестации</label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="notify_document_expiry" class="form-check-input" id="notifyDocumentExpiry" {% if settings.notify_document_expiry %}checked{% endif %}>
+                            <label class="form-check-label" for="notifyDocumentExpiry">Истечение документов</label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="notify_contract_end" class="form-check-input" id="notifyContractEnd" {% if settings.notify_contract_end %}checked{% endif %}>
+                            <label class="form-check-label" for="notifyContractEnd">Окончание договоров</label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="notify_birthday" class="form-check-input" id="notifyBirthday" {% if settings.notify_birthday %}checked{% endif %}>
+                            <label class="form-check-label" for="notifyBirthday">Дни рождения</label>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Время отправки -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Время отправки уведомлений</label>
+                            <input type="time" name="notification_time" class="form-control" value="{{ settings.notification_time|default:'09:00' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">За сколько дней напоминать</label>
+                            <input type="number" name="reminder_days" class="form-control" value="{{ settings.reminder_days|default:7 }}">
+                        </div>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить настройки
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function testTelegram() {
+    const token = document.querySelector('input[name="telegram_token"]').value;
+    const chatId = document.querySelector('input[name="telegram_admin_chat"]').value;
+
+    fetch('/settings/notifications/test-telegram/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({token: token, chat_id: chatId})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✓ Подключение успешно! Проверьте сообщение в Telegram.');
+        } else {
+            alert('✗ Ошибка: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}

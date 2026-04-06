@@ -1,0 +1,131 @@
+<!-- module_app/templates/module_app/reminders/detail.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Напоминание: {{ reminder.title }}{% endblock %}
+
+{% block page_heading %}Детали напоминания{% endblock %}
+
+{% block page_actions %}
+<div>
+    <button class="btn btn-success" onclick="completeReminder()" {% if reminder.is_completed %}disabled{% endif %}>
+        <i class="fas fa-check"></i> Отметить выполненным
+    </button>
+    <a href="{% url 'module_app:reminder_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ reminder.title }}</h6>
+                    <span class="badge {% if reminder.priority == 'critical' %}bg-danger{% elif reminder.priority == 'high' %}bg-warning{% elif reminder.priority == 'medium' %}bg-info{% else %}bg-secondary{% endif %}">
+                        {{ reminder.get_priority_display }} приоритет
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="info-group">
+                            <label class="text-muted">Сотрудник</label>
+                            <p class="h5">
+                                <a href="{% url 'module_app:employee_detail' reminder.employee.id %}">
+                                    {{ reminder.employee.full_name }}
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-group">
+                            <label class="text-muted">Тип напоминания</label>
+                            <p class="h5">{{ reminder.get_reminder_type_display }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-group">
+                            <label class="text-muted">Дата исполнения</label>
+                            <p class="h5 {% if reminder.due_date < today %}text-danger{% endif %}">
+                                {{ reminder.due_date|date:"d.m.Y" }}
+                                {% if reminder.due_date < today %}
+                                <span class="badge bg-danger ms-2">Просрочено</span>
+                                {% elif reminder.due_date <= today %}
+                                <span class="badge bg-warning ms-2">Сегодня</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-group">
+                            <label class="text-muted">Статус</label>
+                            <p class="h5">
+                                {% if reminder.is_completed %}
+                                <span class="badge bg-success">Выполнено</span>
+                                {% elif reminder.is_sent %}
+                                <span class="badge bg-info">Уведомление отправлено</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Ожидает</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if reminder.description %}
+                <div class="info-group mb-4">
+                    <label class="text-muted">Описание</label>
+                    <p>{{ reminder.description|linebreaks }}</p>
+                </div>
+                {% endif %}
+
+                <div class="info-group mb-4">
+                    <label class="text-muted">Настройки уведомления</label>
+                    <p>Напомнить за {{ reminder.reminder_days_before }} дней до даты</p>
+                </div>
+
+                {% if reminder.related_document %}
+                <div class="alert alert-info">
+                    <i class="fas fa-file-alt"></i>
+                    <strong>Связанный документ:</strong>
+                    <a href="{{ reminder.related_document.file.url }}" target="_blank">{{ reminder.related_document.title }}</a>
+                    {% if reminder.related_document.expiry_date %}
+                    (Истекает: {{ reminder.related_document.expiry_date|date:"d.m.Y" }})
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if reminder.related_generated_doc %}
+                <div class="alert alert-info">
+                    <i class="fas fa-file-signature"></i>
+                    <strong>Связанный документ:</strong>
+                    {{ reminder.related_generated_doc.get_document_type_display }}
+                    №{{ reminder.related_generated_doc.document_number }}
+                </div>
+                {% endif %}
+
+                {% if reminder.completed_at %}
+                <hr>
+                <div class="text-muted small">
+                    Выполнено: {{ reminder.completed_at|date:"d.m.Y H:i" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function completeReminder() {
+    if (confirm('Отметить напоминание как выполненное?')) {
+        fetch(`{% url 'module_app:reminder_complete' reminder.id %}`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        }).then(() => location.reload());
+    }
+}
+</script>
+{% endblock %}

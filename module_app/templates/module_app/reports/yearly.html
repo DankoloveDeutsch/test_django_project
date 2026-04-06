@@ -1,0 +1,173 @@
+<!-- module_app/templates/module_app/reports/yearly.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Годовой отчет{% endblock %}
+
+{% block page_heading %}Годовой отчет по посещаемости{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{% url 'module_app:export_attendance' %}?year={{ year }}" class="btn btn-success">
+        <i class="fas fa-file-excel"></i> Экспорт Excel
+    </a>
+    <a href="{% url 'module_app:reports' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Параметры</h6>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label">Год</label>
+                        <select name="year" class="form-select">
+                            {% for y in years %}
+                            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Отдел</label>
+                        <select name="department" class="form-select">
+                            <option value="">Все отделы</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept }}" {% if dept == department %}selected{% endif %}>{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Сформировать</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Итоги года</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="h2 text-primary">{{ summary.total_employees }}</div>
+                    <div class="text-muted">Сотрудников</div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h5 text-success">{{ summary.total_hours|floatformat:0 }}</div>
+                        <small>Всего часов</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 text-warning">{{ summary.overtime_hours|floatformat:0 }}</div>
+                        <small>Переработки</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="mt-2">
+                    <div class="small">Средняя норма: {{ summary.avg_hours|floatformat:0 }} ч/мес</div>
+                    <div class="small">Средняя переработка: {{ summary.avg_overtime|floatformat:0 }} ч/мес</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Динамика по месяцам</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="yearlyChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Детализация по месяцам</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Месяц</th>
+                                <th>Отработано часов</th>
+                                <th>Норма часов</th>
+                                <th>Переработка</th>
+                                <th>Процент</th>
+                            </thead>
+                        <tbody>
+                            {% for month in monthly_data %}
+                            <tr>
+                                <td><strong>{{ month.name }}</strong></td>
+                                <td>{{ month.total_hours|floatformat:0 }}</td>
+                                <td>{{ month.norm_hours }}</td>
+                                <td class="{% if month.overtime > 0 %}text-warning{% endif %}">
+                                    {{ month.overtime|floatformat:0 }}
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" style="width: {{ month.percentage }}%">
+                                            {{ month.percentage }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-secondary">
+                            <tr>
+                                <th>ИТОГО:</th>
+                                <th>{{ summary.total_hours|floatformat:0 }}</th>
+                                <th>{{ summary.total_norm }}</th>
+                                <th>{{ summary.overtime_hours|floatformat:0 }}</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('yearlyChart'), {
+    type: 'line',
+    data: {
+        labels: {{ month_labels|safe }},
+        datasets: [
+            {
+                label: 'Отработано часов',
+                data: {{ hours_data|safe }},
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                fill: true,
+                tension: 0.4
+            },
+            {
+                label: 'Норма часов',
+                data: {{ norm_data|safe }},
+                borderColor: '#1cc88a',
+                borderDash: [5, 5],
+                fill: false
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { position: 'top' }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+﻿{% extends 'module_app/base.html' %}
+
+{% block title %}Отчеты{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4">Отчеты и аналитика</h1>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
+                    <h5>Месячный отчет</h5>
+                    <p class="text-muted">Отчет о часах работы за месяц</p>
+                    <a href="{% url 'module_app:monthly_report' %}" class="btn btn-primary">Сформировать</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                    <h5>Годовой отчет</h5>
+                    <p class="text-muted">Анализ за год</p>
+                    <a href="{% url 'module_app:yearly_report' %}" class="btn btn-success">Сформировать</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-pie fa-3x text-info mb-3"></i>
+                    <h5>Отчет по отделам</h5>
+                    <p class="text-muted">Статистика по подразделениям</p>
+                    <a href="{% url 'module_app:department_report' %}" class="btn btn-info">Сформировать</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
+                    <h5>Отчет по переработкам</h5>
+                    <p class="text-muted">Сверхурочные часы</p>
+                    <a href="{% url 'module_app:overtime_report' %}" class="btn btn-warning">Сформировать</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

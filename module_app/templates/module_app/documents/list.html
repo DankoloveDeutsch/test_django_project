@@ -1,0 +1,135 @@
+<!-- module_app/templates/module_app/documents/list.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Документы{% endblock %}
+
+{% block page_heading %}Все документы системы{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{% url 'module_app:document_generate' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Сгенерировать документ
+    </a>
+    <a href="{% url 'module_app:document_template_list' %}" class="btn btn-info">
+        <i class="fas fa-copy"></i> Шаблоны
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <!-- Фильтры -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Фильтры</h6>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" name="search" class="form-control" placeholder="Поиск по номеру, названию..." value="{{ request.GET.search }}">
+                    </div>
+                    <div class="col-md-2">
+                        <select name="document_type" class="form-select">
+                            <option value="">Все типы</option>
+                            {% for key, value in document_types %}
+                            <option value="{{ key }}" {% if request.GET.document_type == key %}selected{% endif %}>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="status" class="form-select">
+                            <option value="">Все статусы</option>
+                            <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Черновик</option>
+                            <option value="generated" {% if request.GET.status == 'generated' %}selected{% endif %}>Сформирован</option>
+                            <option value="signed" {% if request.GET.status == 'signed' %}selected{% endif %}>Подписан</option>
+                            <option value="sent" {% if request.GET.status == 'sent' %}selected{% endif %}>Отправлен</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" name="date_from" class="form-control" placeholder="С" value="{{ request.GET.date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" name="date_to" class="form-control" placeholder="По" value="{{ request.GET.date_to }}">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-primary w-100">Фильтр</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Таблица документов -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Список документов</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>№ документа</th>
+                                <th>Тип</th>
+                                <th>Сотрудник</th>
+                                <th>Дата</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr>
+                                <td><code>{{ doc.document_number }}</code></td>
+                                <td>{{ doc.get_document_type_display }}</td>
+                                <td>
+                                    <a href="{% url 'module_app:employee_detail' doc.employee.id %}">
+                                        {{ doc.employee.full_name }}
+                                    </a>
+                                </td>
+                                <td>{{ doc.document_date|date:"d.m.Y" }}</td>
+                                <td>
+                                    {% if doc.status == 'draft' %}
+                                    <span class="badge bg-secondary">Черновик</span>
+                                    {% elif doc.status == 'generated' %}
+                                    <span class="badge bg-info">Сформирован</span>
+                                    {% elif doc.status == 'signed' %}
+                                    <span class="badge bg-success">Подписан</span>
+                                    {% elif doc.status == 'sent' %}
+                                    <span class="badge bg-primary">Отправлен</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'module_app:document_detail' doc.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if doc.file %}
+                                        <a href="{{ doc.file.url }}" class="btn btn-sm btn-secondary" target="_blank">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if doc.status == 'draft' %}
+                                        <a href="{% url 'module_app:document_sign' doc.id %}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-signature"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fas fa-folder-open fa-3x mb-3 d-block"></i>
+                                    Нет сгенерированных документов
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% include 'module_app/includes/pagination.html' with page_obj=documents %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

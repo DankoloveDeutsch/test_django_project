@@ -1,0 +1,55 @@
+<!-- module_app/templates/module_app/includes/modals.html -->
+<!-- Модальное окно подтверждения -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение действия</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" id="confirmButton">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно загрузки -->
+<div class="modal fade" id="loadingModal" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p>Загрузка...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showConfirm(message, callback) {
+        const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        document.getElementById('confirmMessage').innerText = message;
+        const confirmBtn = document.getElementById('confirmButton');
+        const oldCallback = confirmBtn.onclick;
+        confirmBtn.onclick = () => {
+            callback();
+            modal.hide();
+        };
+        modal.show();
+    }
+
+    function showLoading() {
+        const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+        modal.show();
+        return modal;
+    }
+
+    function hideLoading(modal) {
+        if (modal) modal.hide();
+    }
+</script>

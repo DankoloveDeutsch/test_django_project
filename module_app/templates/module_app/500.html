@@ -1,0 +1,21 @@
+<!-- module_app/templates/module_app/500.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Ошибка сервера{% endblock %}
+
+{% block content %}
+<div class="container text-center py-5">
+    <div class="error-page">
+        <h1 class="display-1 text-muted">500</h1>
+        <div class="mb-4">
+            <i class="fas fa-exclamation-triangle fa-4x text-danger"></i>
+        </div>
+        <h3 class="mb-3">Внутренняя ошибка сервера</h3>
+        <p class="text-muted mb-4">Что-то пошло не так. Пожалуйста, попробуйте позже.</p>
+        <p class="small text-muted mb-4">Если ошибка повторяется, обратитесь к администратору системы.</p>
+        <a href="{% url 'module_app:dashboard' %}" class="btn btn-primary">
+            <i class="fas fa-home me-2"></i> Вернуться на главную
+        </a>
+    </div>
+</div>
+{% endblock %}

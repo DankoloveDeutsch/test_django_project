@@ -1,0 +1,109 @@
+<!-- module_app/templates/module_app/employees/schedule.html -->
+{% extends 'module_app/base.html' %}
+
+{% load custom_filters %}
+
+{% block title %}График работы: {{ employee.full_name }}{% endblock %}
+
+{% block page_heading %}График работы: {{ employee.full_name }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:employee_detail' employee.id %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Редактирование графика работы</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>День недели</th>
+                                    <th>Начало работы</th>
+                                    <th>Окончание работы</th>
+                                    <th>Выходной</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day, day_name in days %}
+                                <tr>
+                                    <td><strong>{{ day_name }}</strong></td>
+                                    <td>
+                                        <input type="time" name="start_{{ day }}"
+                                               value="{{ schedule|get_item:day|get_item:'start'|default:'09:00' }}"
+                                               class="form-control" {% if schedule|get_item:day|get_item:'is_off' %}disabled{% endif %}>
+                                    </td>
+                                    <td>
+                                        <input type="time" name="end_{{ day }}"
+                                               value="{{ schedule|get_item:day|get_item:'end'|default:'18:00' }}"
+                                               class="form-control" {% if schedule|get_item:day|get_item:'is_off' %}disabled{% endif %}>
+                                    </td>
+                                    <td class="text-center">
+                                        <input type="checkbox" name="off_{{ day }}"
+                                               class="form-check-input"
+                                               {% if schedule|get_item:day|get_item:'is_off' %}checked{% endif %}
+                                               onchange="toggleDay(this, '{{ day }}')">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <hr>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить график
+                        </button>
+                        <a href="{% url 'module_app:employee_detail' employee.id %}" class="btn btn-secondary">
+                            Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Примечания</h6>
+            </div>
+            <div class="card-body">
+                <ul class="text-muted">
+                    <li>Для выходного дня время не указывается</li>
+                    <li>График работы используется для расчета нормы часов</li>
+                    <li>Изменения вступают в силу с текущей даты</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDay(checkbox, day) {
+    const startInput = document.querySelector(`input[name="start_${day}"]`);
+    const endInput = document.querySelector(`input[name="end_${day}"]`);
+
+    if (checkbox.checked) {
+        startInput.disabled = true;
+        endInput.disabled = true;
+        startInput.value = '';
+        endInput.value = '';
+    } else {
+        startInput.disabled = false;
+        endInput.disabled = false;
+        startInput.value = '09:00';
+        endInput.value = '18:00';
+    }
+}
+</script>
+{% endblock %}

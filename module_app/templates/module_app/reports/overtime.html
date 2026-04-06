@@ -1,0 +1,189 @@
+<!-- module_app/templates/module_app/reports/overtime.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Отчет по переработкам{% endblock %}
+
+{% block page_heading %}Отчет по сверхурочным часам{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Параметры отчета</h6>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Период</label>
+                        <select name="period" class="form-select">
+                            <option value="month" {% if period == 'month' %}selected{% endif %}>Текущий месяц</option>
+                            <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>Квартал</option>
+                            <option value="year" {% if period == 'year' %}selected{% endif %}>Год</option>
+                            <option value="custom" {% if period == 'custom' %}selected{% endif %}>Произвольный</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">С</label>
+                        <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">По</label>
+                        <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Сотрудник</label>
+                        <select name="employee" class="form-select">
+                            <option value="">Все сотрудники</option>
+                            {% for emp in employees %}
+                            <option value="{{ emp.id }}" {% if emp.id|stringformat:"s" == employee %}selected{% endif %}>{{ emp.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">Сформировать</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Сверхурочные часы</h6>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <h2 class="mb-0">{{ summary.total_overtime|floatformat:0 }}</h2>
+                                <small>Всего переработок (часов)</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body text-center">
+                                <h2 class="mb-0">{{ summary.employees_with_overtime }}</h2>
+                                <small>Сотрудников с переработками</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h2 class="mb-0">{{ summary.avg_overtime|floatformat:1 }}</h2>
+                                <small>Средняя переработка на сотрудника</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Сотрудник</th>
+                                <th>Отдел</th>
+                                <th>Отработано часов</th>
+                                <th>Норма часов</th>
+                                <th>Переработка</th>
+                                <th>Процент</th>
+                                <th>Рекомендация</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in overtime_data %}
+                            <tr class="{% if emp.overtime_hours > 40 %}table-danger{% elif emp.overtime_hours > 20 %}table-warning{% endif %}">
+                                <td>
+                                    <a href="{% url 'module_app:employee_detail' emp.id %}">
+                                        {{ emp.full_name }}
+                                    </a>
+                                </td>
+                                <td>{{ emp.department|default:"—" }}</td>
+                                <td>{{ emp.total_hours|floatformat:1 }}</td>
+                                <td>{{ emp.norm_hours }}</td>
+                                <td class="fw-bold text-warning">{{ emp.overtime_hours|floatformat:1 }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-warning" style="width: {{ emp.overtime_percent }}%">
+                                            {{ emp.overtime_percent }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if emp.overtime_hours > 40 %}
+                                    <span class="badge bg-danger">Критично! Требуется отдых</span>
+                                    {% elif emp.overtime_hours > 20 %}
+                                    <span class="badge bg-warning">Высокая нагрузка</span>
+                                    {% elif emp.overtime_hours > 0 %}
+                                    <span class="badge bg-info">Умеренная нагрузка</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Норма</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="fas fa-chart-line fa-3x mb-3 d-block"></i>
+                                    Нет данных за выбранный период
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if overtime_data %}
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Рекомендации:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Переработка более 20 часов в месяц требует внимания руководителя</li>
+                        <li>Переработка более 40 часов в месяц является нарушением трудового законодательства</li>
+                        <li>Рекомендуется предоставить отгулы или компенсацию за сверхурочную работу</li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Динамика переработок</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="overtimeTrendChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('overtimeTrendChart'), {
+    type: 'line',
+    data: {
+        labels: {{ trend_labels|safe }},
+        datasets: [{
+            label: 'Переработки (часы)',
+            data: {{ trend_data|safe }},
+            borderColor: '#f6c23e',
+            backgroundColor: 'rgba(246, 194, 62, 0.1)',
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' }
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

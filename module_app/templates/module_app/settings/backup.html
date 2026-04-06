@@ -1,0 +1,232 @@
+<!-- module_app/templates/module_app/settings/backup.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Резервное копирование{% endblock %}
+
+{% block page_heading %}Резервное копирование данных{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:settings' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Автоматическое резервное копирование</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" name="backup_enabled" class="form-check-input" id="backupEnabled" {% if settings.backup_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="backupEnabled">Включить автоматическое резервное копирование</label>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Время выполнения</label>
+                            <input type="time" name="backup_time" class="form-control" value="{{ settings.backup_time|default:'02:00' }}">
+                            <div class="form-text">Ежедневно в указанное время</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Хранить (дней)</label>
+                            <input type="number" name="backup_retention" class="form-control" value="{{ settings.backup_retention|default:30 }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Путь для хранения бэкапов</label>
+                        <input type="text" name="backup_path" class="form-control" value="{{ settings.backup_path|default:'/backups/hr_system' }}">
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Информация:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Бэкапы включают: базу данных, медиа-файлы, конфигурацию</li>
+                            <li>Размер бэкапа: {{ backup_size|default:"Не рассчитано" }}</li>
+                            <li>Последний бэкап: {{ last_backup|date:"d.m.Y H:i"|default:"Не выполнялся" }}</li>
+                        </ul>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить настройки
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Действия</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <button class="btn btn-success w-100" onclick="createBackup()">
+                            <i class="fas fa-database"></i> Создать бэкап сейчас
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#restoreModal">
+                            <i class="fas fa-undo-alt"></i> Восстановить из бэкапа
+                        </button>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h6 class="font-weight-bold">Доступные бэкапы</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Размер</th>
+                                <th>Тип</th>
+                                <th></th>
+                            </thead>
+                        <tbody id="backupList">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Загрузка...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно восстановления -->
+<div class="modal fade" id="restoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Восстановление из бэкапа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Внимание!</strong> Восстановление перезапишет текущие данные.
+                    Рекомендуется предварительно создать бэкап.
+                </div>
+                <label class="form-label">Выберите бэкап для восстановления</label>
+                <select id="restoreBackup" class="form-select"></select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="restoreBackup()">Восстановить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Загрузка списка бэкапов
+function loadBackups() {
+    fetch('/settings/backup/list/')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('backupList');
+            const select = document.getElementById('restoreBackup');
+
+            if (data.backups.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Нет сохраненных бэкапов</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            select.innerHTML = '';
+
+            data.backups.forEach(backup => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${backup.date}</td>
+                        <td>${backup.size}</td>
+                        <td><span class="badge bg-info">${backup.type}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="deleteBackup('${backup.name}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                select.innerHTML += `<option value="${backup.name}">${backup.date} (${backup.size})</option>`;
+            });
+        });
+}
+
+function createBackup() {
+    if (confirm('Создать резервную копию сейчас?')) {
+        fetch('/settings/backup/create/', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✓ Бэкап создан успешно!');
+                loadBackups();
+            } else {
+                alert('✗ Ошибка: ' + data.error);
+            }
+        });
+    }
+}
+
+function restoreBackup() {
+    const backupName = document.getElementById('restoreBackup').value;
+    if (confirm('Восстановить из бэкапа ' + backupName + '? Данные будут перезаписаны!')) {
+        fetch('/settings/backup/restore/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({backup: backupName})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✓ Восстановление завершено! Страница будет перезагружена.');
+                location.reload();
+            } else {
+                alert('✗ Ошибка: ' + data.error);
+            }
+        });
+    }
+}
+
+function deleteBackup(name) {
+    if (confirm('Удалить бэкап ' + name + '?')) {
+        fetch('/settings/backup/delete/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({backup: name})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadBackups();
+            } else {
+                alert('✗ Ошибка: ' + data.error);
+            }
+        });
+    }
+}
+
+loadBackups();
+</script>
+{% endblock %}

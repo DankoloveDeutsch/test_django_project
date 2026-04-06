@@ -1,0 +1,199 @@
+<!-- module_app/templates/module_app/accounting/status.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Статус синхронизации{% endblock %}
+
+{% block page_heading %}Статус интеграции с 1С{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:accounting_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <!-- Статистические карточки -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-8">
+                                <h2 class="mb-0">{{ stats.total }}</h2>
+                                <small>Всего операций</small>
+                            </div>
+                            <div class="col-4 text-end">
+                                <i class="fas fa-exchange-alt fa-3x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-8">
+                                <h2 class="mb-0">{{ stats.processed }}</h2>
+                                <small>Обработано</small>
+                            </div>
+                            <div class="col-4 text-end">
+                                <i class="fas fa-check-circle fa-3x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-8">
+                                <h2 class="mb-0">{{ stats.pending }}</h2>
+                                <small>Ожидает</small>
+                            </div>
+                            <div class="col-4 text-end">
+                                <i class="fas fa-clock fa-3x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-8">
+                                <h2 class="mb-0">{{ stats.error }}</h2>
+                                <small>Ошибки</small>
+                            </div>
+                            <div class="col-4 text-end">
+                                <i class="fas fa-exclamation-triangle fa-3x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Графики -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Динамика операций</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="operationsChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Статус интеграции</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="statusChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Последние ошибки -->
+        {% if recent_errors %}
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary text-danger">Последние ошибки</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Сотрудник</th>
+                                <th>Операция</th>
+                                <th>Ошибка</th>
+                            </thead>
+                        <tbody>
+                            {% for error in recent_errors %}
+                            <tr>
+                                <td>{{ error.created_at|date:"d.m.Y H:i" }}</td>
+                                <td>{{ error.employee.full_name }}</td>
+                                <td>{{ error.get_operation_type_display }}</td>
+                                <td class="text-danger">{{ error.error_message|truncatechars:100 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Информация о подключении -->
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о подключении</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="text-muted">Статус подключения</label>
+                        <p>
+                            {% if connection_status %}
+                            <span class="badge bg-success">Подключено</span>
+                            {% else %}
+                            <span class="badge bg-danger">Нет подключения</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Последняя синхронизация</label>
+                        <p>{{ last_sync|date:"d.m.Y H:i:s"|default:"Не выполнялась" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// График динамики операций
+new Chart(document.getElementById('operationsChart'), {
+    type: 'line',
+    data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [{
+            label: 'Количество операций',
+            data: {{ chart_data|safe }},
+            borderColor: '#4e73df',
+            backgroundColor: 'rgba(78, 115, 223, 0.1)',
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true
+    }
+});
+
+// Круговая диаграмма статусов
+new Chart(document.getElementById('statusChart'), {
+    type: 'pie',
+    data: {
+        labels: ['Обработано', 'Ожидает', 'Ошибки'],
+        datasets: [{
+            data: [{{ stats.processed }}, {{ stats.pending }}, {{ stats.error }}],
+            backgroundColor: ['#1cc88a', '#f6c23e', '#e74a3b']
+        }]
+    }
+});
+</script>
+{% endblock %}

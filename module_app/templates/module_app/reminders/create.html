@@ -1,0 +1,108 @@
+<!-- module_app/templates/module_app/reminders/create.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Создание напоминания{% endblock %}
+
+{% block page_heading %}Создание нового напоминания{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:reminder_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о напоминании</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Сотрудник *</label>
+                            <select name="employee" class="form-select" required>
+                                <option value="">Выберите сотрудника...</option>
+                                {% for emp in employees %}
+                                <option value="{{ emp.id }}" {% if request.GET.employee == emp.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ emp.full_name }} ({{ emp.position }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Тип напоминания *</label>
+                            <select name="reminder_type" class="form-select" required>
+                                <option value="">Выберите тип...</option>
+                                <option value="medical">Медосмотр</option>
+                                <option value="certification">Аттестация</option>
+                                <option value="contract_end">Окончание договора</option>
+                                <option value="vacation">Отпуск</option>
+                                <option value="probation_end">Окончание испытательного срока</option>
+                                <option value="document_expiry">Истечение срока документа</option>
+                                <option value="birthday">День рождения</option>
+                                <option value="custom">Другое</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Заголовок *</label>
+                            <input type="text" name="title" class="form-control" required>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea name="description" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Дата исполнения *</label>
+                            <input type="date" name="due_date" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Напомнить за дней</label>
+                            <input type="number" name="reminder_days_before" class="form-control" value="7" min="1" max="90">
+                        </div>
+
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Приоритет</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input type="radio" name="priority" value="low" class="form-check-input">
+                                    <label class="form-check-label">Низкий</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" name="priority" value="medium" class="form-check-input" checked>
+                                    <label class="form-check-label">Средний</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" name="priority" value="high" class="form-check-input">
+                                    <label class="form-check-label">Высокий</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" name="priority" value="critical" class="form-check-input">
+                                    <label class="form-check-label">Критический</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Создать напоминание
+                        </button>
+                        <a href="{% url 'module_app:reminder_list' %}" class="btn btn-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+<!-- module_app/templates/module_app/documents/personal/list.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Личные документы сотрудников{% endblock %}
+
+{% block page_heading %}Личные документы сотрудников{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{% url 'module_app:employee_document_upload' %}" class="btn btn-primary">
+        <i class="fas fa-upload"></i> Загрузить документ
+    </a>
+    <a href="{% url 'module_app:expiring_documents' %}" class="btn btn-warning">
+        <i class="fas fa-clock"></i> Истекающие документы
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <!-- Фильтры -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Фильтры</h6>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" name="search" class="form-control" placeholder="Поиск по названию..." value="{{ request.GET.search }}">
+                    </div>
+                    <div class="col-md-2">
+                        <select name="document_type" class="form-select">
+                            <option value="">Все типы</option>
+                            {% for key, value in document_types %}
+                            <option value="{{ key }}" {% if request.GET.document_type == key %}selected{% endif %}>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="employee" class="form-select">
+                            <option value="">Все сотрудники</option>
+                            {% for emp in employees %}
+                            <option value="{{ emp.id }}" {% if request.GET.employee == emp.id|stringformat:"s" %}selected{% endif %}>{{ emp.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="status" class="form-select">
+                            <option value="">Все статусы</option>
+                            <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Активные</option>
+                            <option value="expiring" {% if request.GET.status == 'expiring' %}selected{% endif %}>Истекают</option>
+                            <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>Просроченные</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">Применить</button>
+                        <a href="{% url 'module_app:employee_document_list' %}" class="btn btn-secondary">Сбросить</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Таблица документов -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Список документов</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Название</th>
+                                <th>Сотрудник</th>
+                                <th>Дата загрузки</th>
+                                <th>Срок действия</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr class="{% if doc.is_expired %}table-danger{% elif doc.days_until_expiry and doc.days_until_expiry <= 30 %}table-warning{% endif %}">
+                                <td><span class="badge bg-secondary">{{ doc.get_document_type_display }}</span></td>
+                                <td>{{ doc.title }}</td>
+                                <td>
+                                    <a href="{% url 'module_app:employee_detail' doc.employee.id %}">
+                                        {{ doc.employee.full_name }}
+                                    </a>
+                                </td>
+                                <td>{{ doc.upload_date|date:"d.m.Y" }}</td>
+                                <td>
+                                    {% if doc.expiry_date %}
+                                        {{ doc.expiry_date|date:"d.m.Y" }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if doc.is_expired %}
+                                    <span class="badge bg-danger">Просрочен</span>
+                                    {% elif doc.days_until_expiry and doc.days_until_expiry <= 30 %}
+                                    <span class="badge bg-warning">Истекает через {{ doc.days_until_expiry }} дн.</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Активен</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ doc.file.url }}" class="btn btn-sm btn-info" target="_blank">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <a href="{% url 'module_app:employee_document_detail' doc.id %}" class="btn btn-sm btn-secondary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteDocument({{ doc.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="fas fa-folder-open fa-3x mb-3 d-block"></i>
+                                    Нет загруженных документов
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% include 'module_app/includes/pagination.html' with page_obj=documents %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteDocument(id) {
+    if (confirm('Вы уверены, что хотите удалить этот документ?')) {
+        fetch(`/employee-documents/${id}/delete/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        }).then(() => location.reload());
+    }
+}
+</script>
+{% endblock %}

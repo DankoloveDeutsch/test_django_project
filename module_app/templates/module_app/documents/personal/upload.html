@@ -1,0 +1,110 @@
+<!-- module_app/templates/module_app/documents/personal/upload.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Загрузка документа{% endblock %}
+
+{% block page_heading %}Загрузка документа сотрудника{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:employee_document_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о документе</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Сотрудник *</label>
+                            <select name="employee" class="form-select" required>
+                                <option value="">Выберите сотрудника...</option>
+                                {% for emp in employees %}
+                                <option value="{{ emp.id }}" {% if request.GET.employee == emp.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ emp.full_name }} ({{ emp.position }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Тип документа *</label>
+                            <select name="document_type" class="form-select" required>
+                                <option value="">Выберите тип...</option>
+                                <option value="passport">Паспорт</option>
+                                <option value="snils">СНИЛС</option>
+                                <option value="inn">ИНН</option>
+                                <option value="employment_history">Трудовая книжка</option>
+                                <option value="education">Диплом об образовании</option>
+                                <option value="contract">Трудовой договор</option>
+                                <option value="medical">Медицинская книжка</option>
+                                <option value="certificate">Сертификат/Удостоверение</option>
+                                <option value="military">Военный билет</option>
+                                <option value="photo">Фотография</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Название документа *</label>
+                            <input type="text" name="title" class="form-control" required>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Файл *</label>
+                            <input type="file" name="file" class="form-control" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                            <div class="form-text">
+                                Поддерживаемые форматы: PDF, DOC, DOCX, JPG, PNG. Максимальный размер: 10 МБ
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Срок действия</label>
+                            <input type="date" name="expiry_date" class="form-control">
+                            <div class="form-text">Укажите дату истечения срока документа (если применимо)</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Активен</label>
+                            <div class="form-check mt-2">
+                                <input type="checkbox" name="is_active" class="form-check-input" id="isActive" checked>
+                                <label class="form-check-label" for="isActive">Документ активен</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea name="description" class="form-control" rows="3" placeholder="Дополнительная информация о документе..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Примечание:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>При загрузке документа с указанием срока действия будет автоматически создано напоминание за 30 дней до истечения</li>
+                            <li>Документы можно будет просмотреть в личном деле сотрудника</li>
+                        </ul>
+                    </div>
+
+                    <hr>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Загрузить документ
+                        </button>
+                        <a href="{% url 'module_app:employee_document_list' %}" class="btn btn-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

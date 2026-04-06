@@ -1,0 +1,129 @@
+<!-- module_app/templates/module_app/documents/templates/list.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Шаблоны документов{% endblock %}
+
+{% block page_heading %}Шаблоны документов{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{% url 'module_app:document_template_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Создать шаблон
+    </a>
+    <a href="{% url 'module_app:document_generate' %}" class="btn btn-success">
+        <i class="fas fa-file-alt"></i> Сгенерировать документ
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Доступные шаблоны</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Тип</th>
+                                <th>Переменные</th>
+                                <th>Статус</th>
+                                <th>Дата создания</th>
+                                <th>Действия</th>
+                            </thead>
+                        <tbody>
+                            {% for template in templates %}
+                            <tr>
+                                <td><strong>{{ template.name }}</strong></td>
+                                <td>{{ template.get_template_type_display }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ template.variables|length }}</span>
+                                </td>
+                                <td>
+                                    {% if template.is_active %}
+                                    <span class="badge bg-success">Активен</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Неактивен</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ template.created_at|date:"d.m.Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'module_app:document_template_edit' template.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteTemplate({{ template.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        <a href="{% url 'module_app:document_generate' %}?template={{ template.id }}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-file-alt"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fas fa-copy fa-3x mb-3 d-block"></i>
+                                    Нет созданных шаблонов
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о переменных</h6>
+            </div>
+            <div class="card-body">
+                <p>В шаблонах можно использовать следующие переменные:</p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <ul class="list-unstyled">
+                            <li><code>{{ "{{ full_name }}" }}</code> - ФИО сотрудника</li>
+                            <li><code>{{ "{{ position }}" }}</code> - Должность</li>
+                            <li><code>{{ "{{ department }}" }}</code> - Отдел</li>
+                            <li><code>{{ "{{ hire_date }}" }}</code> - Дата приема</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <ul class="list-unstyled">
+                            <li><code>{{ "{{ salary }}" }}</code> - Оклад</li>
+                            <li><code>{{ "{{ employee_code }}" }}</code> - Табельный номер</li>
+                            <li><code>{{ "{{ director_name }}" }}</code> - Директор</li>
+                            <li><code>{{ "{{ current_date }}" }}</code> - Текущая дата</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <ul class="list-unstyled">
+                            <li><code>{{ "{{ order_number }}" }}</code> - Номер приказа</li>
+                            <li><code>{{ "{{ vacation_start }}" }}</code> - Начало отпуска</li>
+                            <li><code>{{ "{{ vacation_end }}" }}</code> - Конец отпуска</li>
+                            <li><code>{{ "{{ company_name }}" }}</code> - Название компании</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteTemplate(id) {
+    if (confirm('Вы уверены, что хотите удалить этот шаблон?')) {
+        fetch(`/documents/templates/${id}/delete/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        }).then(() => location.reload());
+    }
+}
+</script>
+{% endblock %}

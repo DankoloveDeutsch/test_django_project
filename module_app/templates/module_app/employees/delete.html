@@ -1,0 +1,80 @@
+<!-- module_app/templates/module_app/employees/delete.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Увольнение сотрудника{% endblock %}
+
+{% block page_heading %}Увольнение сотрудника{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h6 class="m-0"><i class="fas fa-exclamation-triangle"></i> Подтверждение увольнения</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-user-minus fa-5x text-danger mb-3"></i>
+                    <h4>{{ employee.full_name }}</h4>
+                    <p class="text-muted">{{ employee.position }} • {{ employee.department }}</p>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Внимание!</strong> Увольнение сотрудника приведет к:
+                    <ul class="mt-2 mb-0">
+                        <li>Отключению доступа к системе</li>
+                        <li>Созданию приказа об увольнении</li>
+                        <li>Отправке данных в 1С</li>
+                        <li>Архивации личного дела</li>
+                    </ul>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Дата увольнения</label>
+                        <input type="date" name="dismissal_date" class="form-control" value="{{ today }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Причина увольнения</label>
+                        <select name="dismissal_reason" class="form-select" required>
+                            <option value="">Выберите причину...</option>
+                            <option value="voluntary">По собственному желанию</option>
+                            <option value="agreement">По соглашению сторон</option>
+                            <option value="expiry">Окончание срока договора</option>
+                            <option value="probation">Не прошел испытательный срок</option>
+                            <option value="reduction">Сокращение штата</option>
+                            <option value="violation">Нарушение трудовой дисциплины</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Комментарий</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Дополнительная информация..."></textarea>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="confirmCheck" required>
+                        <label class="form-check-label" for="confirmCheck">
+                            Я подтверждаю, что ознакомлен с последствиями увольнения
+                        </label>
+                    </div>
+
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'module_app:employee_detail' object.id %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-user-minus"></i> Уволить сотрудника
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

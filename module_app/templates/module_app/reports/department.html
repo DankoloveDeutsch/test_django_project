@@ -1,0 +1,184 @@
+<!-- module_app/templates/module_app/reports/department.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Отчет по отделам{% endblock %}
+
+{% block page_heading %}Отчет по подразделениям{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Параметры отчета</h6>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Год</label>
+                        <select name="year" class="form-select">
+                            {% for y in years %}
+                            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Квартал</label>
+                        <select name="quarter" class="form-select">
+                            <option value="1" {% if quarter == 1 %}selected{% endif %}>1 квартал</option>
+                            <option value="2" {% if quarter == 2 %}selected{% endif %}>2 квартал</option>
+                            <option value="3" {% if quarter == 3 %}selected{% endif %}>3 квартал</option>
+                            <option value="4" {% if quarter == 4 %}selected{% endif %}>4 квартал</option>
+                            <option value="all" {% if quarter == 'all' %}selected{% endif %}>Весь год</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">Сформировать</button>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <a href="{% url 'module_app:export_attendance' %}?year={{ year }}&quarter={{ quarter }}" class="btn btn-success w-100">
+                            <i class="fas fa-file-excel"></i> Экспорт
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Сводка по отделам</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Отдел</th>
+                                <th>Сотрудников</th>
+                                <th>Отработано часов</th>
+                                <th>Ср. часов/сотрудника</th>
+                                <th>Переработки</th>
+                                <th>Ср. переработка</th>
+                                <th>Эффективность</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dept in departments_data %}
+                            <tr>
+                                <td><strong>{{ dept.name|default:"Без отдела" }}</strong></td>
+                                <td>{{ dept.employee_count }}</td>
+                                <td class="fw-bold">{{ dept.total_hours|floatformat:0 }}</td>
+                                <td>{{ dept.avg_hours|floatformat:1 }}</td>
+                                <td class="{% if dept.overtime_hours > 0 %}text-warning{% endif %}">
+                                    {{ dept.overtime_hours|floatformat:0 }}
+                                </td>
+                                <td>{{ dept.avg_overtime|floatformat:1 }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" style="width: {{ dept.efficiency }}%">
+                                            {{ dept.efficiency }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="fas fa-building fa-3x mb-3 d-block"></i>
+                                    Нет данных
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-secondary">
+                            <tr>
+                                <th>ИТОГО:</th>
+                                <th>{{ summary.total_employees }}</th>
+                                <th>{{ summary.total_hours|floatformat:0 }}</th>
+                                <th>{{ summary.avg_per_employee|floatformat:1 }}</th>
+                                <th>{{ summary.total_overtime|floatformat:0 }}</th>
+                                <th>{{ summary.avg_overtime|floatformat:1 }}</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Распределение часов по отделам</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="hoursPieChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Сравнение отделов</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="deptBarChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Круговая диаграмма
+new Chart(document.getElementById('hoursPieChart'), {
+    type: 'pie',
+    data: {
+        labels: {{ dept_names|safe }},
+        datasets: [{
+            data: {{ dept_hours|safe }},
+            backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'right' }
+        }
+    }
+});
+
+// Столбчатая диаграмма
+new Chart(document.getElementById('deptBarChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ dept_names|safe }},
+        datasets: [
+            {
+                label: 'Часы работы',
+                data: {{ dept_hours|safe }},
+                backgroundColor: 'rgba(78, 115, 223, 0.8)'
+            },
+            {
+                label: 'Переработки',
+                data: {{ dept_overtime|safe }},
+                backgroundColor: 'rgba(246, 194, 62, 0.8)'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' }
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

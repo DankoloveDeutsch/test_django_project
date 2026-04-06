@@ -1,0 +1,180 @@
+<!-- module_app/templates/module_app/attendance/log.html -->
+{% extends 'module_app/base.html' %}
+{% load static %}
+
+{% block title %}Отметка рабочего времени{% endblock %}
+
+{% block page_heading %}Отметка рабочего времени{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Выберите действие</h6>
+            </div>
+            <div class="card-body text-center py-5">
+                <div class="row g-4">
+                    <div class="col-md-3">
+                        <button class="btn btn-success btn-lg w-100 py-4" onclick="markAttendance('start')">
+                            <i class="fas fa-play fa-3x mb-3 d-block"></i>
+                            <strong>Начало работы</strong>
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-warning btn-lg w-100 py-4" onclick="markAttendance('break')">
+                            <i class="fas fa-pause fa-3x mb-3 d-block"></i>
+                            <strong>Перерыв</strong>
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-info btn-lg w-100 py-4" onclick="markAttendance('resume')">
+                            <i class="fas fa-play-circle fa-3x mb-3 d-block"></i>
+                            <strong>Продолжить</strong>
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-danger btn-lg w-100 py-4" onclick="markAttendance('end')">
+                            <i class="fas fa-stop fa-3x mb-3 d-block"></i>
+                            <strong>Окончание работы</strong>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Сегодняшние отметки -->
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Отметки за сегодня</h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline" id="todayLogs">
+                    <div class="text-center text-muted py-4" id="loadingLogs">
+                        <div class="spinner-border" role="status"></div>
+                        <p class="mt-2">Загрузка...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Информация о рабочем времени -->
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о рабочем времени</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="h2 text-primary" id="totalHours">0</div>
+                        <div class="text-muted">Отработано сегодня</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="h2 text-warning" id="breakHours">0</div>
+                        <div class="text-muted">Перерывы сегодня</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="h2 text-success" id="netHours">0</div>
+                        <div class="text-muted">Чистое время</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSRF Token для AJAX -->
+{% csrf_token %}
+
+<script>
+    function markAttendance(event) {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch("{% url 'module_app:attendance_log' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({
+                event: event
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                loadTodayLogs();
+            } else {
+                showAlert('danger', data.message || 'Произошла ошибка');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'Ошибка сети');
+        });
+    }
+
+    function loadTodayLogs() {
+        fetch("{% url 'module_app:attendance_today' %}")
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('todayLogs');
+            if (data.logs.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-clock fa-3x mb-3 d-block"></i>Сегодня нет отметок</div>';
+            } else {
+                let html = '<div class="list-group">';
+                data.logs.forEach(log => {
+                    let icon = '';
+                    if (log.event === 'start') icon = '✅';
+                    else if (log.event === 'break') icon = '⏸️';
+                    else if (log.event === 'resume') icon = '▶️';
+                    else if (log.event === 'end') icon = '⏹️';
+
+                    html += `<div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span>${icon} ${log.time}</span>
+                            <span>${log.event_display}</span>
+                        </div>
+                    </div>`;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
+
+            // Обновляем статистику
+            document.getElementById('totalHours').innerText = data.total_hours.toFixed(1);
+            document.getElementById('breakHours').innerText = data.break_hours.toFixed(1);
+            document.getElementById('netHours').innerText = data.net_hours.toFixed(1);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('todayLogs').innerHTML = '<div class="text-center text-muted py-4">Ошибка загрузки данных</div>';
+        });
+    }
+
+    function showAlert(type, message) {
+        const alertsDiv = document.querySelector('.alerts-container');
+        if (!alertsDiv) return;
+
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        alertsDiv.insertAdjacentHTML('beforeend', alertHtml);
+
+        setTimeout(() => {
+            const alert = alertsDiv.lastElementChild;
+            if (alert) alert.remove();
+        }, 5000);
+    }
+
+    // Загрузка данных при открытии страницы
+    loadTodayLogs();
+
+    // Автообновление каждые 10 секунд
+    setInterval(loadTodayLogs, 10000);
+</script>
+{% endblock %}

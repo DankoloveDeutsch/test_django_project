@@ -1,0 +1,119 @@
+<!-- module_app/templates/module_app/attendance/today.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Отметки за сегодня{% endblock %}
+
+{% block page_heading %}Отметки за сегодня: {{ today|date:"d.m.Y" }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Текущий статус</h6>
+            </div>
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-user-clock fa-4x text-primary"></i>
+                </div>
+                <h4 id="statusText">Загрузка...</h4>
+                <div class="mt-4">
+                    <button class="btn btn-success btn-lg me-2" id="startBtn">Начать работу</button>
+                    <button class="btn btn-warning btn-lg me-2" id="breakBtn" style="display:none;">Перерыв</button>
+                    <button class="btn btn-info btn-lg me-2" id="resumeBtn" style="display:none;">Продолжить</button>
+                    <button class="btn btn-danger btn-lg" id="endBtn" style="display:none;">Завершить</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Статистика за сегодня</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="h2 text-primary" id="totalHours">0</div>
+                        <div class="text-muted">Отработано</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="h2 text-warning" id="breakHours">0</div>
+                        <div class="text-muted">Перерывы</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="h2 text-success" id="netHours">0</div>
+                        <div class="text-muted">Чистое время</div>
+                    </div>
+                </div>
+                <hr>
+                <div class="timeline" id="timeline"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+function updateStatus() {
+    fetch("{% url 'module_app:attendance_today' %}")
+        .then(response => response.json())
+        .then(data => {
+            const status = data.current_status;
+            document.getElementById('statusText').innerText = status.message;
+
+            // Обновляем видимость кнопок
+            document.getElementById('startBtn').style.display = status.can_start ? 'inline-block' : 'none';
+            document.getElementById('breakBtn').style.display = status.can_break ? 'inline-block' : 'none';
+            document.getElementById('resumeBtn').style.display = status.can_resume ? 'inline-block' : 'none';
+            document.getElementById('endBtn').style.display = status.can_end ? 'inline-block' : 'none';
+
+            // Обновляем статистику
+            document.getElementById('totalHours').innerText = data.total_hours.toFixed(1);
+            document.getElementById('breakHours').innerText = data.break_hours.toFixed(1);
+            document.getElementById('netHours').innerText = data.net_hours.toFixed(1);
+
+            // Обновляем таймлайн
+            let timelineHtml = '<div class="list-group">';
+            data.logs.forEach(log => {
+                let icon = log.event === 'start' ? '✅' : (log.event === 'break' ? '⏸️' : (log.event === 'resume' ? '▶️' : '⏹️'));
+                timelineHtml += `<div class="list-group-item">
+                    <div class="d-flex justify-content-between">
+                        <span>${icon} ${log.time}</span>
+                        <span>${log.event_display}</span>
+                    </div>
+                </div>`;
+            });
+            timelineHtml += '</div>';
+            document.getElementById('timeline').innerHTML = timelineHtml || '<p class="text-muted text-center">Нет отметок</p>';
+        });
+}
+
+function markAttendance(event) {
+    fetch("{% url 'module_app:attendance_log' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({event: event})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateStatus();
+        } else {
+            alert(data.message);
+        }
+    });
+}
+
+document.getElementById('startBtn').onclick = () => markAttendance('start');
+document.getElementById('breakBtn').onclick = () => markAttendance('break');
+document.getElementById('resumeBtn').onclick = () => markAttendance('resume');
+document.getElementById('endBtn').onclick = () => markAttendance('end');
+
+updateStatus();
+setInterval(updateStatus, 10000);
+</script>
+{% endblock %}

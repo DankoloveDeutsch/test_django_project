@@ -1,0 +1,129 @@
+<!-- module_app/templates/module_app/documents/personal/detail.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Документ: {{ document.title }}{% endblock %}
+
+{% block page_heading %}Документ: {{ document.title }}{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{{ document.file.url }}" class="btn btn-success" target="_blank">
+        <i class="fas fa-download"></i> Скачать
+    </a>
+    <a href="{% url 'module_app:employee_document_edit' document.id %}" class="btn btn-warning">
+        <i class="fas fa-edit"></i> Редактировать
+    </a>
+    <a href="{% url 'module_app:employee_document_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Информация о документе</h6>
+                    <span class="badge {% if document.is_expired %}bg-danger{% elif document.days_until_expiry and document.days_until_expiry <= 30 %}bg-warning{% else %}bg-success{% endif %}">
+                        {% if document.is_expired %}
+                            Просрочен
+                        {% elif document.days_until_expiry and document.days_until_expiry <= 30 %}
+                            Истекает через {{ document.days_until_expiry }} дней
+                        {% else %}
+                            Активен
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="text-muted">Тип документа</label>
+                        <p class="h5">{{ document.get_document_type_display }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Сотрудник</label>
+                        <p class="h5">
+                            <a href="{% url 'module_app:employee_detail' document.employee.id %}">
+                                {{ document.employee.full_name }}
+                            </a>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Дата загрузки</label>
+                        <p>{{ document.upload_date|date:"d.m.Y" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Срок действия</label>
+                        <p>
+                            {% if document.expiry_date %}
+                                {{ document.expiry_date|date:"d.m.Y" }}
+                                {% if document.is_expired %}
+                                    <span class="badge bg-danger ms-2">Просрочен</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Не установлен</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Размер файла</label>
+                        <p>{{ document.file.size|filesizeformat }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Статус</label>
+                        <p>
+                            {% if document.is_active %}
+                            <span class="badge bg-success">Активен</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Неактивен</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                {% if document.description %}
+                <hr>
+                <label class="text-muted">Описание</label>
+                <p>{{ document.description|linebreaks }}</p>
+                {% endif %}
+
+                {% if document.file.name|slice:"-3:" == "pdf" %}
+                <hr>
+                <h6 class="font-weight-bold">Просмотр документа</h6>
+                <iframe src="{{ document.file.url }}" style="width: 100%; height: 600px;" frameborder="0"></iframe>
+                {% elif document.file.name|slice:"-3:" in "jpg,png,gif" %}
+                <hr>
+                <h6 class="font-weight-bold">Просмотр изображения</h6>
+                <img src="{{ document.file.url }}" class="img-fluid border" alt="{{ document.title }}">
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Связанные напоминания -->
+        {% if reminders %}
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Связанные напоминания</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for reminder in reminders %}
+                    <a href="{% url 'module_app:reminder_detail' reminder.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ reminder.title }}</h6>
+                            <small>{{ reminder.due_date|date:"d.m.Y" }}</small>
+                        </div>
+                        <p class="mb-1">{{ reminder.description|truncatechars:100 }}</p>
+                        <small class="text-muted">Приоритет: {{ reminder.get_priority_display }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

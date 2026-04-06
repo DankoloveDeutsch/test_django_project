@@ -1,0 +1,143 @@
+<!-- module_app/templates/module_app/documents/generate.html -->
+{% extends 'module_app/base.html' %}
+{% load static %}
+
+{% block title %}Генерация документа{% endblock %}
+
+{% block page_heading %}Генерация документа{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Параметры документа</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" id="documentForm">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="template" class="form-label">Шаблон документа</label>
+                        <select name="template" id="template" class="form-select" required>
+                            <option value="">Выберите шаблон...</option>
+                            {% for template in templates %}
+                            <option value="{{ template.id }}">{{ template.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="employee" class="form-label">Сотрудник</label>
+                        <select name="employee" id="employee" class="form-select" required>
+                            <option value="">Выберите сотрудника...</option>
+                            {% for emp in employees %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }} ({{ emp.position }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="variablesContainer" class="mb-3"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Формат документа</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" value="html" checked>
+                            <label class="form-check-label">HTML (предпросмотр)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" value="pdf">
+                            <label class="form-check-label">PDF</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" value="docx">
+                            <label class="form-check-label">Word (DOCX)</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-file-alt"></i> Сгенерировать
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Предпросмотр документа</h6>
+            </div>
+            <div class="card-body">
+                <div id="preview" class="border p-3 bg-light" style="min-height: 400px;">
+                    <p class="text-muted text-center">Выберите шаблон и сотрудника для предпросмотра</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('template').addEventListener('change', function() {
+        const templateId = this.value;
+        if (templateId) {
+            loadVariables(templateId);
+        } else {
+            document.getElementById('variablesContainer').innerHTML = '';
+        }
+    });
+
+    function loadVariables(templateId) {
+        fetch(`/api/v1/document-templates/${templateId}/variables/`)
+        .then(response => response.json())
+        .then(data => {
+            let html = '<label class="form-label">Переменные документа</label>';
+            for (const [key, value] of Object.entries(data)) {
+                html += `
+                    <div class="mb-2">
+                        <label class="form-label small">${value}</label>
+                        <input type="text" name="var_${key}" class="form-control" placeholder="Введите значение">
+                    </div>
+                `;
+            }
+            document.getElementById('variablesContainer').innerHTML = html;
+        });
+    }
+
+    document.getElementById('documentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        formData.append('preview', 'true');
+
+        fetch("{% url 'module_app:document_generate' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('preview').innerHTML = data.html;
+            } else {
+                showAlert('danger', data.error);
+            }
+        });
+    });
+
+    function showAlert(type, message) {
+        const alertsDiv = document.querySelector('.alerts-container');
+        if (!alertsDiv) return;
+
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        alertsDiv.insertAdjacentHTML('beforeend', alertHtml);
+    }
+</script>
+{% endblock %}

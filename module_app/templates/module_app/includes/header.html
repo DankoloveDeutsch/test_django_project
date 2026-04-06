@@ -1,0 +1,103 @@
+<!-- module_app/templates/module_app/includes/header.html -->
+<header class="header">
+    <div class="header-left">
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="page-title">
+            {% block header_title %}{% endblock %}
+        </div>
+    </div>
+
+    <div class="header-right">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Поиск..." id="globalSearch">
+        </div>
+
+        <div class="notifications-dropdown">
+            <button class="btn btn-link position-relative" id="notificationsBtn">
+                <i class="fas fa-bell"></i>
+                {% if notifications_count > 0 %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    {{ notifications_count }}
+                </span>
+                {% endif %}
+            </button>
+            <div class="dropdown-menu" id="notificationsMenu">
+                <h6 class="dropdown-header">Уведомления</h6>
+                <div id="notificationsList">
+                    <div class="text-center py-3">Загрузка...</div>
+                </div>
+                <div class="dropdown-divider"></div>
+                <a href="{% url 'module_app:reminder_list' %}" class="dropdown-item text-center">
+                    Все уведомления
+                </a>
+            </div>
+        </div>
+
+        <div class="user-dropdown">
+            <button class="btn btn-link dropdown-toggle" data-bs-toggle="dropdown">
+                <img src="{% if request.user.employeeprofile.profile_picture %}{{ request.user.employeeprofile.profile_picture.url }}{% else %}{% static 'module_app/images/default_avatar.jpg' %}{% endif %}" class="user-avatar-small">
+                <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{% url 'module_app:profile' %}">
+                    <i class="fas fa-user me-2"></i> Профиль
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'module_app:edit_profile' %}">
+                    <i class="fas fa-edit me-2"></i> Редактировать профиль
+                </a></li>
+                <li><a class="dropdown-item" href="{% url 'module_app:change_password' %}">
+                    <i class="fas fa-key me-2"></i> Сменить пароль
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'module_app:logout' %}">
+                    <i class="fas fa-sign-out-alt me-2"></i> Выход
+                </a></li>
+            </ul>
+        </div>
+    </div>
+</header>
+
+<script>
+    // Загрузка уведомлений
+    function loadNotifications() {
+        fetch("{% url 'module_app:reminder_list' %}?ajax=1")
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('notificationsList');
+            if (data.reminders.length === 0) {
+                container.innerHTML = '<div class="text-center py-3 text-muted">Нет новых уведомлений</div>';
+            } else {
+                let html = '';
+                data.reminders.forEach(reminder => {
+                    html += `
+                        <a href="/reminders/${reminder.id}/" class="dropdown-item">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-bell text-warning"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <div class="small fw-bold">${reminder.title}</div>
+                                    <div class="small text-muted">${reminder.due_date}</div>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+        });
+    }
+
+    // Глобальный поиск
+    document.getElementById('globalSearch')?.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            window.location.href = `/employees/?search=${encodeURIComponent(this.value)}`;
+        }
+    });
+
+    // Загрузка уведомлений при открытии
+    document.getElementById('notificationsBtn')?.addEventListener('click', loadNotifications);
+</script>

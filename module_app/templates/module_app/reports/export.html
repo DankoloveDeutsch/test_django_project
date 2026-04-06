@@ -1,0 +1,161 @@
+<!-- module_app/templates/module_app/reports/export.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Экспорт данных{% endblock %}
+
+{% block page_heading %}Экспорт данных из системы{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:reports' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Настройка экспорта</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'module_app:export_employees' %}">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Тип данных</label>
+                        <select name="data_type" class="form-select" required>
+                            <option value="">Выберите тип...</option>
+                            <option value="employees">Сотрудники</option>
+                            <option value="attendance">Табель учета</option>
+                            <option value="documents">Документы</option>
+                            <option value="reminders">Напоминания</option>
+                            <option value="accounting">Интеграция с 1С</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Формат выгрузки</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="radio" name="format" value="excel" class="form-check-input" id="formatExcel" checked>
+                                    <label class="form-check-label" for="formatExcel">
+                                        <i class="fas fa-file-excel text-success"></i> Excel (XLSX)
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="radio" name="format" value="csv" class="form-check-input" id="formatCSV">
+                                    <label class="form-check-label" for="formatCSV">
+                                        <i class="fas fa-file-csv text-info"></i> CSV
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="radio" name="format" value="pdf" class="form-check-input" id="formatPDF">
+                                    <label class="form-check-label" for="formatPDF">
+                                        <i class="fas fa-file-pdf text-danger"></i> PDF
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="periodSection">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Период с</label>
+                                <input type="date" name="date_from" class="form-control" value="{{ default_date_from }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Период по</label>
+                                <input type="date" name="date_to" class="form-control" value="{{ default_date_to }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="employeeSection" class="mt-3" style="display: none;">
+                        <label class="form-label">Сотрудники</label>
+                        <select name="employees" class="form-select select2-multiple" multiple>
+                            {% for emp in employees %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }} ({{ emp.employee_code }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Оставьте пустым для выгрузки всех сотрудников</div>
+                    </div>
+
+                    <div id="fieldsSection" class="mt-3" style="display: none;">
+                        <label class="form-label">Выберите поля для выгрузки</label>
+                        <div class="row" id="fieldsList"></div>
+                    </div>
+
+                    <hr>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Информация:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Выгрузка в Excel поддерживает фильтры и сортировку</li>
+                            <li>PDF отчет включает форматирование для печати</li>
+                            <li>Большие объемы данных могут обрабатываться несколько минут</li>
+                        </ul>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-download"></i> Экспортировать
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelector('select[name="data_type"]').addEventListener('change', function() {
+    const dataType = this.value;
+    const periodSection = document.getElementById('periodSection');
+    const employeeSection = document.getElementById('employeeSection');
+    const fieldsSection = document.getElementById('fieldsSection');
+
+    if (dataType === 'attendance' || dataType === 'accounting') {
+        periodSection.style.display = 'block';
+    } else {
+        periodSection.style.display = 'none';
+    }
+
+    if (dataType !== 'employees') {
+        employeeSection.style.display = 'block';
+    } else {
+        employeeSection.style.display = 'none';
+    }
+
+    // Загрузка полей для выбранного типа
+    if (dataType) {
+        fetch(`/reports/fields/?type=${dataType}`)
+            .then(response => response.json())
+            .then(data => {
+                const fieldsList = document.getElementById('fieldsList');
+                fieldsList.innerHTML = '';
+                data.fields.forEach(field => {
+                    fieldsList.innerHTML += `
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="fields" value="${field.name}" class="form-check-input" id="field_${field.name}" checked>
+                                <label class="form-check-label" for="field_${field.name}">${field.label}</label>
+                            </div>
+                        </div>
+                    `;
+                });
+                fieldsSection.style.display = 'block';
+            });
+    } else {
+        fieldsSection.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

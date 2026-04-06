@@ -1,0 +1,54 @@
+<!-- module_app/templates/module_app/includes/navigation.html -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+    <div class="container-fluid">
+        <button class="btn btn-link btn-sm text-dark" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'module_app:dashboard' %}">
+                        <i class="fas fa-tachometer-alt"></i> Дашборд
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="fas fa-users"></i> Сотрудники
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'module_app:employee_list' %}">Список сотрудников</a></li>
+                        <li><a class="dropdown-item" href="{% url 'module_app:employee_create' %}">Добавить сотрудника</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'module_app:schedule_list' %}">График работы</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="fas fa-clock"></i> Учет времени
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'module_app:attendance_log' %}">Отметка времени</a></li>
+                        <li><a class="dropdown-item" href="{% url 'module_app:attendance_list' %}">Журнал учета</a></li>
+                        <li><a class="dropdown-item" href="{% url 'module_app:attendance_monthly' %}">Месячный отчет</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <i class="fas fa-file-alt"></i> Документы
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'module_app:document_generate' %}">Сгенерировать документ</a></li>
+                        <li><a class="dropdown-item" href="{% url 'module_app:document_template_list' %}">Шаблоны</a></li>
+                        <li><a class="dropdown-item" href="{% url 'module_app:employee_document_list' %}">Личные документы</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'module_app:reports' %}">
+                        <i class="fas fa-chart-bar"></i> Отчеты
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,136 @@
+<!-- module_app/templates/module_app/reminders/list.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Напоминания{% endblock %}
+
+{% block page_heading %}Напоминания{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{% url 'module_app:reminder_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Добавить напоминание
+    </a>
+    <a href="{% url 'module_app:send_reminders' %}" class="btn btn-warning">
+        <i class="fas fa-bell"></i> Отправить сейчас
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#active">Активные</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#completed">Выполненные</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#all">Все</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="active">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Приоритет</th>
+                                        <th>Сотрудник</th>
+                                        <th>Заголовок</th>
+                                        <th>Тип</th>
+                                        <th>Срок</th>
+                                        <th>Статус</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for reminder in active_reminders %}
+                                    <tr class="{% if reminder.priority == 'critical' %}table-danger{% elif reminder.priority == 'high' %}table-warning{% endif %}">
+                                        <td>
+                                            {% if reminder.priority == 'critical' %}
+                                            <span class="badge bg-danger">Критично</span>
+                                            {% elif reminder.priority == 'high' %}
+                                            <span class="badge bg-warning">Высокий</span>
+                                            {% elif reminder.priority == 'medium' %}
+                                            <span class="badge bg-info">Средний</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Низкий</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'module_app:employee_detail' reminder.employee.id %}">
+                                                {{ reminder.employee.full_name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ reminder.title }}</td>
+                                        <td>{{ reminder.get_reminder_type_display }}</td>
+                                        <td class="{% if reminder.due_date <= today %}text-danger{% endif %}">
+                                            {{ reminder.due_date|date:"d.m.Y" }}
+                                            {% if reminder.due_date <= today %}
+                                            <span class="badge bg-danger">Просрочено</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if reminder.is_sent %}
+                                            <span class="badge bg-info">Уведомление отправлено</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Ожидает</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'module_app:reminder_detail' reminder.id %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-success" onclick="completeReminder({{ reminder.id }})">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <a href="{% url 'module_app:reminder_delete' reminder.id %}" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="fas fa-bell-slash fa-3x mb-3 d-block"></i>
+                                            Нет активных напоминаний
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="completed">
+                        <!-- Аналогичная таблица для выполненных напоминаний -->
+                    </div>
+
+                    <div class="tab-pane fade" id="all">
+                        <!-- Аналогичная таблица для всех напоминаний -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function completeReminder(id) {
+    if (confirm('Отметить напоминание как выполненное?')) {
+        fetch(`/reminders/${id}/complete/`, {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        }).then(() => location.reload());
+    }
+}
+</script>
+{% endblock %}

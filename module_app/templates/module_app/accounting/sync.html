@@ -1,0 +1,181 @@
+<!-- module_app/templates/module_app/accounting/sync.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Синхронизация с 1С{% endblock %}
+
+{% block page_heading %}Ручная синхронизация с бухгалтерией{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:accounting_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Выбор данных для синхронизации</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" id="syncForm">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label class="form-label">Тип синхронизации</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="radio" name="sync_type" value="employees" class="form-check-input" id="syncEmployees" checked>
+                                    <label class="form-check-label" for="syncEmployees">
+                                        <i class="fas fa-users"></i> Сотрудники
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="radio" name="sync_type" value="attendance" class="form-check-input" id="syncAttendance">
+                                    <label class="form-check-label" for="syncAttendance">
+                                        <i class="fas fa-clock"></i> Табель учета
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="radio" name="sync_type" value="all" class="form-check-input" id="syncAll">
+                                    <label class="form-check-label" for="syncAll">
+                                        <i class="fas fa-database"></i> Все данные
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="employeesSection">
+                        <div class="mb-3">
+                            <label class="form-label">Сотрудники для синхронизации</label>
+                            <select name="employees" class="form-select select2-multiple" multiple>
+                                {% for emp in employees %}
+                                <option value="{{ emp.id }}">{{ emp.full_name }} ({{ emp.employee_code }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Оставьте пустым для синхронизации всех сотрудников</div>
+                        </div>
+                    </div>
+
+                    <div id="periodSection" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Период с</label>
+                                <input type="date" name="date_from" class="form-control" value="{{ default_date_from }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Период по</label>
+                                <input type="date" name="date_to" class="form-control" value="{{ default_date_to }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Информация:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Синхронизация может занять несколько минут в зависимости от объема данных</li>
+                            <li>После завершения вы получите уведомление о результатах</li>
+                            <li>Статус операций можно отслеживать в журнале интеграции</li>
+                        </ul>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary" id="syncBtn">
+                            <i class="fas fa-sync"></i> Начать синхронизацию
+                        </button>
+                        <a href="{% url 'module_app:accounting_list' %}" class="btn btn-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4" id="progressCard" style="display: none;">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Ход синхронизации</h6>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" id="progressBar" style="width: 0%">0%</div>
+                </div>
+                <div id="progressLog" style="max-height: 200px; overflow-y: auto;">
+                    <p class="text-muted">Подготовка к синхронизации...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('input[name="sync_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const employeesSection = document.getElementById('employeesSection');
+        const periodSection = document.getElementById('periodSection');
+
+        if (this.value === 'employees') {
+            employeesSection.style.display = 'block';
+            periodSection.style.display = 'none';
+        } else if (this.value === 'attendance') {
+            employeesSection.style.display = 'block';
+            periodSection.style.display = 'block';
+        } else {
+            employeesSection.style.display = 'block';
+            periodSection.style.display = 'block';
+        }
+    });
+});
+
+document.getElementById('syncForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const syncBtn = document.getElementById('syncBtn');
+    const progressCard = document.getElementById('progressCard');
+    const progressBar = document.getElementById('progressBar');
+    const progressLog = document.getElementById('progressLog');
+
+    syncBtn.disabled = true;
+    syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Синхронизация...';
+    progressCard.style.display = 'block';
+    progressLog.innerHTML = '<p class="text-info">Начало синхронизации...</p>';
+
+    const formData = new FormData(this);
+
+    // Используем EventSource для получения прогресса
+    const eventSource = new EventSource('/accounting/sync/stream/');
+
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        progressBar.style.width = data.progress + '%';
+        progressBar.textContent = data.progress + '%';
+        progressLog.innerHTML += '<p>' + data.message + '</p>';
+        progressLog.scrollTop = progressLog.scrollHeight;
+
+        if (data.completed) {
+            eventSource.close();
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = '<i class="fas fa-check"></i> Синхронизация завершена';
+            if (data.success) {
+                progressLog.innerHTML += '<p class="text-success">✓ Синхронизация успешно завершена!</p>';
+            } else {
+                progressLog.innerHTML += '<p class="text-danger">✗ Ошибка при синхронизации: ' + data.error + '</p>';
+            }
+        }
+    };
+
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    });
+});
+</script>
+{% endblock %}

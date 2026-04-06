@@ -1,0 +1,5 @@
+<form method="post">
+    {% csrf_token %}
+    <input type="text" name="position" value="{{ emp.position }}">
+    <button type="submit">Сохранить</button>
+</form>

@@ -1,0 +1,178 @@
+<!-- module_app/templates/module_app/attendance/monthly.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Месячный отчет{% endblock %}
+
+{% block page_heading %}Месячный отчет по посещаемости{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Параметры отчета</h6>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label">Год</label>
+                        <select name="year" class="form-select">
+                            {% for y in years %}
+                            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Месяц</label>
+                        <select name="month" class="form-select">
+                            {% for m in months %}
+                            <option value="{{ m.num }}" {% if m.num == month %}selected{% endif %}>{{ m.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Отдел</label>
+                        <select name="department" class="form-select">
+                            <option value="">Все отделы</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept }}" {% if dept == department %}selected{% endif %}>{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Сформировать</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Сводка</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="h2 text-primary">{{ summary.total_employees }}</div>
+                    <div class="text-muted">Сотрудников</div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h5 text-success">{{ summary.total_hours|floatformat:0 }}</div>
+                        <small>Всего часов</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 text-warning">{{ summary.overtime_hours|floatformat:0 }}</div>
+                        <small>Переработки</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="mt-3">
+                    <div class="small text-muted">Средняя норма часов: {{ summary.avg_hours|floatformat:0 }} ч.</div>
+                    <div class="small text-muted">Средняя переработка: {{ summary.avg_overtime|floatformat:0 }} ч.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Детализация по сотрудникам</h6>
+                    <a href="{% url 'module_app:export_attendance' %}?year={{ year }}&month={{ month }}" class="btn btn-sm btn-success">
+                        <i class="fas fa-file-excel"></i> Экспорт
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Сотрудник</th>
+                                <th>Отдел</th>
+                                <th>Отработано</th>
+                                <th>Норма</th>
+                                <th>Переработка</th>
+                                <th>Процент</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in employees_data %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'module_app:employee_attendance' emp.id %}?month={{ month }}&year={{ year }}">
+                                        {{ emp.full_name }}
+                                    </a>
+                                </td>
+                                <td>{{ emp.department|default:"—" }}</td>
+                                <td class="fw-bold">{{ emp.total_hours|floatformat:1 }}</td>
+                                <td>{{ emp.norm_hours }}</td>
+                                <td class="{% if emp.overtime_hours > 0 %}text-warning{% endif %}">
+                                    {{ emp.overtime_hours|floatformat:1 }}
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" style="width: {{ emp.percentage }}%">
+                                            {{ emp.percentage }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="fas fa-chart-line fa-3x mb-3 d-block"></i>
+                                    Нет данных за выбранный период
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mt-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">График посещаемости</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="attendanceChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('attendanceChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [{
+            label: 'Часы работы',
+            data: {{ chart_data|safe }},
+            backgroundColor: 'rgba(78, 115, 223, 0.8)',
+            borderColor: 'rgba(78, 115, 223, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Часы' }
+            },
+            x: {
+                title: { display: true, text: 'Сотрудники' }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

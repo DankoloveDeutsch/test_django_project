@@ -1,0 +1,120 @@
+<!-- module_app/templates/module_app/employees/attendance.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Табель: {{ employee.full_name }}{% endblock %}
+
+{% block page_heading %}Табель учета: {{ employee.full_name }}{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{% url 'module_app:attendance_log' %}?employee={{ employee.id }}" class="btn btn-primary">
+        <i class="fas fa-fingerprint"></i> Отметить время
+    </a>
+    <a href="{% url 'module_app:export_attendance' %}?employee={{ employee.id }}" class="btn btn-success">
+        <i class="fas fa-file-excel"></i> Экспорт
+    </a>
+    <a href="{% url 'module_app:employee_detail' employee.id %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Статистика за месяц</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="h1 text-primary">{{ monthly_stats.total_hours|floatformat:0 }}</div>
+                    <div class="text-muted">Отработано часов</div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h5 text-warning">{{ monthly_stats.overtime_hours|floatformat:0 }}</div>
+                        <small>Переработки</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 text-success">{{ monthly_stats.norm_hours }}</div>
+                        <small>Норма часов</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="mt-3">
+                    <label class="form-label">Выберите месяц</label>
+                    <select id="monthSelect" class="form-select">
+                        {% for month in available_months %}
+                        <option value="{{ month.value }}" {% if month.value == current_month %}selected{% endif %}>
+                            {{ month.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">{{ month_name }} {{ year }}</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Дата</th>
+                                <th>День недели</th>
+                                <th>Приход</th>
+                                <th>Уход</th>
+                                <th>Обед</th>
+                                <th>Часы</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in calendar %}
+                            <tr class="{% if day.is_weekend %}table-secondary{% endif %}">
+                                <td>{{ day.date|date:"d.m" }}</td>
+                                <td>{{ day.weekday }}</td>
+                                <td>{{ day.start_time|default:"—" }}</td>
+                                <td>{{ day.end_time|default:"—" }}</td>
+                                <td>{{ day.break_hours|default:"—" }}</td>
+                                <td class="{% if day.hours and day.hours < 8 %}text-warning{% endif %}">
+                                    {{ day.hours|default:"0" }}
+                                </td>
+                                <td>
+                                    {% if day.is_holiday %}
+                                    <span class="badge bg-danger">Праздник</span>
+                                    {% elif day.is_weekend %}
+                                    <span class="badge bg-secondary">Выходной</span>
+                                    {% elif day.is_absent %}
+                                    <span class="badge bg-warning">Отсутствие</span>
+                                    {% elif day.hours and day.hours >= 8 %}
+                                    <span class="badge bg-success">Полный день</span>
+                                    {% elif day.hours and day.hours > 0 %}
+                                    <span class="badge bg-info">Неполный день</span>
+                                    {% else %}
+                                    <span class="badge bg-light text-dark">Нет данных</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('monthSelect').addEventListener('change', function() {
+    window.location.href = `?month=${this.value}`;
+});
+</script>
+{% endblock %}

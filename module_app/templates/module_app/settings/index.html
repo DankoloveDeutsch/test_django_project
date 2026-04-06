@@ -1,0 +1,140 @@
+<!-- module_app/templates/module_app/settings/index.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Настройки системы{% endblock %}
+
+{% block page_heading %}Настройки системы{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-globe fa-3x text-primary mb-3"></i>
+                <h5>Общие настройки</h5>
+                <p class="text-muted small">Название компании, логотип, контакты</p>
+                <a href="{% url 'module_app:general_settings' %}" class="btn btn-sm btn-primary">Настроить</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-bell fa-3x text-warning mb-3"></i>
+                <h5>Уведомления</h5>
+                <p class="text-muted small">Email, Telegram, SMS настройки</p>
+                <a href="{% url 'module_app:notification_settings' %}" class="btn btn-sm btn-primary">Настроить</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-exchange-alt fa-3x text-success mb-3"></i>
+                <h5>Интеграции</h5>
+                <p class="text-muted small">1С, ФНС, ПФР, ФСС</p>
+                <a href="{% url 'module_app:integration_settings' %}" class="btn btn-sm btn-primary">Настроить</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-database fa-3x text-info mb-3"></i>
+                <h5>Резервное копирование</h5>
+                <p class="text-muted small">Автоматические бэкапы, восстановление</p>
+                <a href="{% url 'module_app:backup_settings' %}" class="btn btn-sm btn-primary">Настроить</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-file-alt fa-3x text-secondary mb-3"></i>
+                <h5>Шаблоны документов</h5>
+                <p class="text-muted small">Приказы, договоры, уведомления</p>
+                <a href="{% url 'module_app:document_template_list' %}" class="btn btn-sm btn-primary">Редактировать</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x text-danger mb-3"></i>
+                <h5>Права доступа</h5>
+                <p class="text-muted small">Роли пользователей, разрешения</p>
+                <a href="/admin/auth/user/" class="btn btn-sm btn-primary">Управление</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-3x text-purple mb-3"></i>
+                <h5>Логирование</h5>
+                <p class="text-muted small">Настройка логирования, уровень детализации</p>
+                <a href="{% url 'module_app:audit_log' %}" class="btn btn-sm btn-primary">Просмотр</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-info-circle fa-3x text-info mb-3"></i>
+                <h5>О системе</h5>
+                <p class="text-muted small">Версия, лицензия, обновления</p>
+                <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#aboutModal">Информация</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно о системе -->
+<div class="modal fade" id="aboutModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">О системе</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-chalkboard-user fa-4x text-primary"></i>
+                    <h4 class="mt-2">HR Management System</h4>
+                    <p class="text-muted">Управление табельным учетом специалиста</p>
+                </div>
+                <hr>
+                <dl class="row">
+                    <dt class="col-sm-5">Версия:</dt>
+                    <dd class="col-sm-7">1.0.0</dd>
+
+                    <dt class="col-sm-5">Дата выпуска:</dt>
+                    <dd class="col-sm-7">{{ current_year }}-03-30</dd>
+
+                    <dt class="col-sm-5">Django:</dt>
+                    <dd class="col-sm-7">4.2</dd>
+
+                    <dt class="col-sm-5">Python:</dt>
+                    <dd class="col-sm-7">3.11+</dd>
+
+                    <dt class="col-sm-5">Лицензия:</dt>
+                    <dd class="col-sm-7">Proprietary</dd>
+
+                    <dt class="col-sm-5">Разработчик:</dt>
+                    <dd class="col-sm-7">HR System Team</dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

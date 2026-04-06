@@ -1,0 +1,23 @@
+<!-- module_app/templates/module_app/index.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
+<div class="container text-center py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body py-5">
+                    <i class="fas fa-chalkboard-user fa-5x text-primary mb-4"></i>
+                    <h1 class="h3 mb-3">Добро пожаловать в систему учета рабочего времени</h1>
+                    <p class="text-muted mb-4">Система управления табельным учетом и кадровым документооборотом</p>
+                    <a href="{% url 'module_app:dashboard' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-tachometer-alt"></i> Перейти в дашборд
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

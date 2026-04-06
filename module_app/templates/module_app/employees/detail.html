@@ -1,0 +1,180 @@
+{% extends 'module_app/base.html' %}
+{% load static %}
+
+{% block title %}{{ employee.full_name }} - Карточка сотрудника{% endblock %}
+
+{% block page_heading %}{{ employee.full_name }}{% endblock %}
+
+{% block page_actions %}
+<div>
+    <a href="{% url 'module_app:employee_update' employee.id %}" class="btn btn-warning">
+        <i class="fas fa-edit"></i> Редактировать
+    </a>
+    {% if employee.is_active %}
+    <a href="{% url 'module_app:employee_delete' employee.id %}" class="btn btn-danger">
+        <i class="fas fa-user-minus"></i> Уволить
+    </a>
+    {% endif %}
+    <a href="{% url 'module_app:employee_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Левая колонка - Фото и контакты -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Фото сотрудника</h6>
+            </div>
+            <div class="card-body text-center">
+                {% if employee.profile_picture %}
+                <img src="{{ employee.profile_picture.url }}" class="img-fluid rounded-circle mb-3" style="max-width: 200px;">
+                {% else %}
+                <img src="{% static 'module_app/images/default_avatar.jpg' %}" class="img-fluid rounded-circle mb-3" style="max-width: 200px;">
+                {% endif %}
+                <h4>{{ employee.full_name }}</h4>
+                <p class="text-muted">{{ employee.position|default:"Должность не указана" }}</p>
+                <div class="mt-3">
+                    {% if employee.is_active %}
+                    <span class="badge bg-success">Активен</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Уволен</span>
+                    {% endif %}
+                    <span class="badge bg-info">{{ employee.get_employment_type_display }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Контактная информация</h6>
+            </div>
+            <div class="card-body">
+                <!-- ↓↓↓ ФАМИЛИЯ, ИМЯ, ОТЧЕСТВО ↓↓↓ -->
+                <div class="mb-3">
+                    <label class="text-muted">Фамилия</label>
+                    <p><i class="fas fa-user me-2"></i> {{ employee.user.last_name|default:"Не указана" }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted">Имя</label>
+                    <p><i class="fas fa-user me-2"></i> {{ employee.user.first_name|default:"Не указано" }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted">Отчество</label>
+                    <p><i class="fas fa-user me-2"></i> {{ employee.user.middle_name|default:"Не указано" }}</p>
+                </div>
+                <!-- ↑↑↑ ФАМИЛИЯ, ИМЯ, ОТЧЕСТВО ↑↑↑ -->
+
+                <div class="mb-3">
+                    <label class="text-muted">Телефон</label>
+                    <p><i class="fas fa-phone me-2"></i> {{ employee.phone|default:"Не указан" }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted">Email</label>
+                    <p><i class="fas fa-envelope me-2"></i> {{ employee.user.email|default:"Не указан" }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted">Адрес</label>
+                    <p><i class="fas fa-map-marker-alt me-2"></i> {{ employee.address|default:"Не указан" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Личные данные</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="text-muted">Дата рождения</label>
+                    <p><i class="fas fa-birthday-cake me-2"></i> {{ employee.birth_date|date:"d.m.Y"|default:"Не указана" }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted">Возраст</label>
+                    <p><i class="fas fa-calendar-alt me-2"></i> {{ employee.age|default:"—" }} лет</p>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted">ИНН</label>
+                    <p><i class="fas fa-id-card me-2"></i> {{ employee.tax_id|default:"Не указан" }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted">СНИЛС</label>
+                    <p><i class="fas fa-id-card me-2"></i> {{ employee.snils|default:"Не указан" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Правая колонка - Информация о работе -->
+    <div class="col-xl-8 col-lg-7">
+        <!-- Трудоустройство -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о трудоустройстве</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="text-muted">Табельный номер</label>
+                        <p><code>{{ employee.employee_code|default:"—" }}</code></p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Отдел</label>
+                        <p>{{ employee.department|default:"Не указан" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Должность</label>
+                        <p>{{ employee.position|default:"Не указана" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Дата приема</label>
+                        <p>{{ employee.hire_date|date:"d.m.Y"|default:"Не указана" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Дата увольнения</label>
+                        <p>{{ employee.dismissal_date|date:"d.m.Y"|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Оклад</label>
+                        <p>{{ employee.salary|default:"—" }} ₽</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted">Банковский счет</label>
+                        <p>{{ employee.bank_account|default:"Не указан" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Статистика</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="h1 text-primary">{{ employee.total_hours|floatformat:0 }}</div>
+                        <div class="text-muted">Всего часов</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="h1 text-success">{{ employee.personal_documents.count }}</div>
+                        <div class="text-muted">Документов</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="h1 text-warning">{{ employee.reminders.count }}</div>
+                        <div class="text-muted">Напоминаний</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="h1 text-info">{{ employee.attendance_logs.count }}</div>
+                        <div class="text-muted">Дней работы</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

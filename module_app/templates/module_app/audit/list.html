@@ -1,0 +1,170 @@
+<!-- module_app/templates/module_app/audit/list.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Журнал аудита{% endblock %}
+
+{% block page_heading %}Журнал действий пользователей{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <!-- Фильтры -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Фильтры</h6>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" name="user" class="form-control" placeholder="Пользователь" value="{{ request.GET.user }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="action" class="form-select">
+                            <option value="">Все действия</option>
+                            <option value="create" {% if request.GET.action == 'create' %}selected{% endif %}>Создание</option>
+                            <option value="update" {% if request.GET.action == 'update' %}selected{% endif %}>Обновление</option>
+                            <option value="delete" {% if request.GET.action == 'delete' %}selected{% endif %}>Удаление</option>
+                            <option value="login" {% if request.GET.action == 'login' %}selected{% endif %}>Вход</option>
+                            <option value="logout" {% if request.GET.action == 'logout' %}selected{% endif %}>Выход</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="model" class="form-select">
+                            <option value="">Все модели</option>
+                            <option value="EmployeeProfile" {% if request.GET.model == 'EmployeeProfile' %}selected{% endif %}>Сотрудники</option>
+                            <option value="AttendanceLog" {% if request.GET.model == 'AttendanceLog' %}selected{% endif %}>Табель</option>
+                            <option value="GeneratedDocument" {% if request.GET.model == 'GeneratedDocument' %}selected{% endif %}>Документы</option>
+                            <option value="Reminder" {% if request.GET.model == 'Reminder' %}selected{% endif %}>Напоминания</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" name="date_from" class="form-control" placeholder="С" value="{{ request.GET.date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" name="date_to" class="form-control" placeholder="По" value="{{ request.GET.date_to }}">
+                    </div>
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">Применить</button>
+                        <a href="{% url 'module_app:audit_log' %}" class="btn btn-secondary">Сбросить</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Таблица аудита -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Записи аудита</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Дата/время</th>
+                                <th>Пользователь</th>
+                                <th>IP адрес</th>
+                                <th>Действие</th>
+                                <th>Модель</th>
+                                <th>Объект</th>
+                                <th>Изменения</th>
+                            </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td><small>{{ log.created_at|date:"d.m.Y H:i:s" }}</small></td>
+                                <td>{{ log.user.get_full_name|default:log.user.username|default:"Система" }}</td>
+                                <td><code>{{ log.ip_address|default:"—" }}</code></td>
+                                <td>
+                                    {% if log.action == 'create' %}
+                                    <span class="badge bg-success">Создание</span>
+                                    {% elif log.action == 'update' %}
+                                    <span class="badge bg-warning">Обновление</span>
+                                    {% elif log.action == 'delete' %}
+                                    <span class="badge bg-danger">Удаление</span>
+                                    {% elif log.action == 'login' %}
+                                    <span class="badge bg-info">Вход</span>
+                                    {% elif log.action == 'logout' %}
+                                    <span class="badge bg-secondary">Выход</span>
+                                    {% else %}
+                                    <span class="badge bg-primary">{{ log.action }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ log.model_name }}</td>
+                                <td>
+                                    <a href="#" onclick="viewObject('{{ log.model_name }}', '{{ log.object_id }}')">
+                                        {{ log.object_repr|truncatechars:50 }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if log.changes %}
+                                    <button class="btn btn-sm btn-info" onclick="viewChanges({{ log.id }})">
+                                        <i class="fas fa-eye"></i> Просмотр
+                                    </button>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="fas fa-history fa-3x mb-3 d-block"></i>
+                                    Нет записей аудита
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% include 'module_app/includes/pagination.html' with page_obj=logs %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно изменений -->
+<div class="modal fade" id="changesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Детали изменений</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="changesContent" style="white-space: pre-wrap;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewChanges(logId) {
+    fetch(`/audit/${logId}/changes/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('changesContent').textContent = JSON.stringify(data, null, 2);
+            new bootstrap.Modal(document.getElementById('changesModal')).show();
+        });
+}
+
+function viewObject(modelName, objectId) {
+    let url = '';
+    switch(modelName) {
+        case 'EmployeeProfile':
+            url = `/employees/${objectId}/`;
+            break;
+        case 'GeneratedDocument':
+            url = `/documents/${objectId}/`;
+            break;
+        case 'Reminder':
+            url = `/reminders/${objectId}/`;
+            break;
+        default:
+            alert('Просмотр объекта недоступен');
+            return;
+    }
+    window.open(url, '_blank');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+<!-- module_app/templates/module_app/documents/templates/edit.html -->
+{% extends 'module_app/base.html' %}
+
+{% block title %}Редактирование шаблона{% endblock %}
+
+{% block page_heading %}Редактирование: {{ template.name }}{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'module_app:document_template_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Назад
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Редактирование шаблона</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Название шаблона *</label>
+                            <input type="text" name="name" class="form-control" value="{{ template.name }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Тип шаблона *</label>
+                            <select name="template_type" class="form-select" required>
+                                {% for key, value in template_types %}
+                                <option value="{{ key }}" {% if template.template_type == key %}selected{% endif %}>{{ value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Содержание шаблона *</label>
+                        <textarea name="content" class="form-control font-monospace" rows="15">{{ template.content }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Переменные (JSON)</label>
+                        <textarea name="variables" class="form-control font-monospace" rows="5">{{ template.variables|safe }}</textarea>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="is_active" class="form-check-input" id="isActive" {% if template.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="isActive">Шаблон активен</label>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Предпросмотр переменных:</strong>
+                        <div class="mt-2">
+                            {% for key, value in template.variables.items %}
+                            <code>{{ "{{ " }}{{ key }}{{ " }}" }}</code> - {{ value }}<br>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить изменения
+                        </button>
+                        <a href="{% url 'module_app:document_template_list' %}" class="btn btn-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
