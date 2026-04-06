@@ -370,6 +370,41 @@ def employee_update(request, pk):
         employee.department = request.POST.get('department', '')
         employee.phone = request.POST.get('phone', '')
         employee.address = request.POST.get('address', '')
+
+
+        employee.middle_name = request.POST.get('middle_name', '')
+        employee.bank_account = request.POST.get('bank_account', '')
+        employee.tax_id = request.POST.get('tax_id', '')
+        employee.snils = request.POST.get('snils', '')
+
+        # Дата рождения
+        birth_date_str = request.POST.get('birth_date', '')
+        employee.birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date() if birth_date_str else None
+
+        # Дата приёма
+        hire_date_str = request.POST.get('hire_date', '')
+        employee.hire_date = datetime.strptime(hire_date_str, '%Y-%m-%d').date() if hire_date_str else None
+
+        # Дата увольнения
+        dismissal_date_str = request.POST.get('dismissal_date', '')
+        employee.dismissal_date = datetime.strptime(dismissal_date_str,
+                                                             '%Y-%m-%d').date() if dismissal_date_str else None
+
+        salary_str = request.POST.get('salary')
+        if salary_str:
+            # замена запятой на точку для преобразования в float
+            salary_str = salary_str.replace(',', '.')
+            try:
+                employee.salary = float(salary_str)
+            except ValueError:
+                employee.salary = None
+        else:
+            employee.salary = None
+
+        if 'profile_picture' in request.FILES:
+            employee.profile_picture = request.FILES['profile_picture']
+
+
         employee.save()
 
         messages.success(request, 'Данные сохранены!')
